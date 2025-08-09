@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import {
-  ArrowLeft,
   Bell,
   ChevronRight,
   Globe,
@@ -25,7 +24,7 @@ import {
 } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { useRouter } from 'expo-router';
-import GradientBackground from '../../../components/GradientBackground';
+import GradientBackground from '../../components/GradientBackground';
 import { useI18n } from '@/hooks/useI18n';
 import LanguageSelector from '@/components/LanguageSelector';
 
@@ -83,102 +82,71 @@ export default function SettingsScreen() {
     <GradientBackground>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#fff" />
-          </TouchableOpacity>
           <Text style={styles.title}>{t('settings.appSettings')}</Text>
           <Text style={styles.subtitle}>Customize your experience</Text>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings.account')}</Text>
+          <Text style={styles.sectionTitle}>{t('profile.profile')}</Text>
           <View style={styles.sectionContent}>
             <SettingItem
               icon={User}
-              title={t('profile.personalInfo')}
-              subtitle="Update your personal details"
-              color="#3b82f6"
+              title={t('profile.editProfile')}
+              subtitle="Manage your personal information"
+              onPress={() => router.push('/profile')}
             />
             <SettingItem
               icon={Mail}
               title={t('auth.email')}
-              subtitle="sarah.connor@example.com"
-              color="#8b5cf6"
+              subtitle="Update your email address"
             />
             <SettingItem
               icon={Lock}
               title={t('auth.password')}
-              subtitle="Last changed 3 months ago"
-              color="#ef4444"
+              subtitle="Change your password"
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('settings.preferences')}</Text>
+          <Text style={styles.sectionTitle}>{t('profile.preferences')}</Text>
           <View style={styles.sectionContent}>
             <SettingItem
               icon={Bell}
               title={t('settings.notifications')}
+              subtitle="Manage notification preferences"
               showToggle={true}
               toggleValue={notifications}
               onToggle={setNotifications}
               showChevron={false}
-              color="#f59e0b"
+              color="#10b981"
             />
             <SettingItem
               icon={Moon}
               title={t('settings.theme')}
+              subtitle="Toggle dark mode"
               showToggle={true}
               toggleValue={darkMode}
               onToggle={setDarkMode}
               showChevron={false}
-              color="#6366f1"
+              color="#8b5cf6"
             />
             <SettingItem
               icon={Vibrate}
               title="Vibration"
+              subtitle="Haptic feedback"
               showToggle={true}
               toggleValue={vibration}
               onToggle={setVibration}
               showChevron={false}
-              color="#ec4899"
+              color="#f59e0b"
             />
             <SettingItem
               icon={Globe}
-              title={t('settings.language')}
+              title={t('common.language')}
               subtitle={getLanguageDisplayName(getCurrentLanguage())}
-              color="#10b981"
               onPress={() => setShowLanguageModal(true)}
-            />
-            <SettingItem
-              icon={Smartphone}
-              title={t('settings.units')}
-              subtitle={t('settings.kilometers')}
-              color="#6366f1"
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {t('settings.privacy')} & Security
-          </Text>
-          <View style={styles.sectionContent}>
-            <SettingItem
-              icon={Shield}
-              title={t('settings.privacy')}
-              subtitle="Manage your data and permissions"
-              color="#0891b2"
-            />
-            <SettingItem
-              icon={Lock}
-              title="App Lock"
-              subtitle="Require authentication to open"
-              color="#dc2626"
+              color="#3b82f6"
             />
           </View>
         </View>
@@ -188,49 +156,81 @@ export default function SettingsScreen() {
           <View style={styles.sectionContent}>
             <SettingItem
               icon={HelpCircle}
-              title="Help Center"
-              subtitle="FAQs and support resources"
-              color="#0d9488"
+              title={t('common.help')}
+              subtitle="Get help and support"
+              color="#ef4444"
+            />
+            <SettingItem
+              icon={Shield}
+              title={t('settings.privacy')}
+              subtitle="Privacy and data settings"
+              color="#10b981"
+            />
+            <SettingItem
+              icon={Smartphone}
+              title={t('settings.aboutApp')}
+              subtitle="App version and information"
+              color="#8b5cf6"
             />
           </View>
         </View>
 
-        <TouchableOpacity
-          style={styles.logoutButton}
-          onPress={() => router.replace('/onboarding/welcome')}
+        <View style={styles.section}>
+          <View style={styles.sectionContent}>
+            <SettingItem
+              icon={LogOut}
+              title={t('auth.signOut')}
+              subtitle="Sign out of your account"
+              showChevron={false}
+              color="#ef4444"
+              onPress={() => {
+                Alert.alert(
+                  t('auth.signOut'),
+                  'Are you sure you want to sign out?',
+                  [
+                    {
+                      text: t('common.cancel'),
+                      style: 'cancel',
+                    },
+                    {
+                      text: t('auth.signOut'),
+                      style: 'destructive',
+                      onPress: () => {
+                        // Handle logout logic here
+                        console.log('Logout pressed');
+                      },
+                    },
+                  ],
+                );
+              }}
+            />
+          </View>
+        </View>
+
+        <Modal
+          visible={showLanguageModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowLanguageModal(false)}
         >
-          <LogOut size={20} color="#ef4444" />
-          <Text style={styles.logoutText}>{t('profile.logout')}</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.version}>{t('settings.version')} 1.0.0</Text>
-      </ScrollView>
-
-      {/* Language Selection Modal */}
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={showLanguageModal}
-        onRequestClose={() => setShowLanguageModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('settings.language')}</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowLanguageModal(false)}
-              >
-                <Text style={styles.closeButtonText}>✕</Text>
-              </TouchableOpacity>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>{t('common.language')}</Text>
+                <TouchableOpacity
+                  onPress={() => setShowLanguageModal(false)}
+                  style={styles.closeButton}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+              <LanguageSelector
+                onLanguageSelect={() => setShowLanguageModal(false)}
+              />
             </View>
-            <LanguageSelector
-              style={styles.languageSelector}
-              onLanguageChange={() => setShowLanguageModal(false)}
-            />
           </View>
-        </View>
-      </Modal>
+        </Modal>
+      </ScrollView>
     </GradientBackground>
   );
 }
@@ -240,94 +240,102 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
     paddingTop: 60,
-  },
-  backButton: {
-    marginBottom: 16,
-    padding: 8,
-    alignSelf: 'flex-start',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   title: {
-    fontFamily: 'Inter-Bold',
     fontSize: 28,
+    fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   subtitle: {
-    fontFamily: 'Inter-Regular',
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: 'rgba(255, 255, 255, 0.7)',
   },
   section: {
-    padding: 20,
-    paddingBottom: 0,
+    marginBottom: 30,
   },
   sectionTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
     color: '#fff',
-    marginBottom: 12,
-    marginLeft: 4,
+    marginBottom: 15,
+    paddingHorizontal: 20,
   },
   sectionContent: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    marginHorizontal: 20,
+    borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.1)',
   },
   settingIcon: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 15,
   },
   settingContent: {
     flex: 1,
   },
   settingTitle: {
-    fontFamily: 'Inter-SemiBold',
     fontSize: 16,
+    fontWeight: '500',
     color: '#fff',
     marginBottom: 2,
   },
   settingSubtitle: {
-    fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.6)',
   },
-  logoutButton: {
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#1a1a1a',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#fff',
+  },
+  closeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    margin: 20,
-    padding: 16,
-    borderRadius: 12,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  logoutText: {
-    fontFamily: 'Inter-SemiBold',
+  closeButtonText: {
+    color: '#fff',
     fontSize: 16,
-    color: '#ef4444',
-  },
-  version: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
-    textAlign: 'center',
-    marginBottom: 32,
+    fontWeight: 'bold',
   },
 });

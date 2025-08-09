@@ -5,7 +5,14 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
-import { Calendar, Clock, Target, TrendingUp } from 'lucide-react-native';
+import {
+  Calendar,
+  Clock,
+  Target,
+  TrendingUp,
+  Brain,
+  Plus,
+} from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import GradientBackground from '../../../components/GradientBackground';
 
@@ -21,7 +28,16 @@ export default function TrainingScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Current Program</Text>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Current Program</Text>
+            <TouchableOpacity
+              style={styles.generateButton}
+              onPress={() => router.push('/training/generate-plan')}
+            >
+              <Brain size={16} color="#fff" />
+              <Text style={styles.generateButtonText}>AI Plan</Text>
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity
             style={styles.programCard}
             onPress={() => router.push('/training/program')}
@@ -35,6 +51,14 @@ export default function TrainingScreen() {
             </View>
           </TouchableOpacity>
         </View>
+
+        {/* Floating Action Button for creating new plans */}
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => router.push('/training/generate-plan')}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
 
         <View style={styles.workouts}>
           <Text style={styles.sectionTitle}>This Week's Workouts</Text>
@@ -141,11 +165,30 @@ const styles = StyleSheet.create({
   section: {
     padding: 20,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 20,
     color: '#fff',
-    marginBottom: 15,
+  },
+  generateButton: {
+    backgroundColor: '#10b981',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  generateButtonText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 12,
+    color: '#fff',
   },
   programCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -231,5 +274,24 @@ const styles = StyleSheet.create({
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    backgroundColor: '#10b981',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
   },
 });

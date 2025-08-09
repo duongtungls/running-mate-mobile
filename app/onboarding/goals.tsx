@@ -9,126 +9,89 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import {
-  ArrowRight,
-  ArrowLeft,
-  Target,
-  Trophy,
-  Clock,
-  TrendingUp,
-  Calendar,
-  MapPin,
-} from 'lucide-react-native';
+import { Target, Calendar, Clock, CheckCircle } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
+import OnboardingProgress from '../../components/OnboardingProgress';
+import OnboardingButton from '../../components/OnboardingButton';
+import OnboardingHeader from '../../components/OnboardingHeader';
+import SelectionCard from '../../components/SelectionCard';
 
 interface GoalsData {
   primaryGoal: string;
-  targetDistance: string;
-  timeframe: string;
-  currentActivity: string;
-  targetRaceDate: string;
-  weeklyDays: string;
+  targetDate: string;
+  weeklyAvailability: string;
+  preferredTimes: string[];
 }
+
+const goalOptions = [
+  {
+    id: 'general-fitness',
+    title: 'General Fitness',
+    description: 'Stay healthy and maintain regular running routine',
+    color: '#22c55e',
+  },
+  {
+    id: 'weight-loss',
+    title: 'Weight Loss',
+    description: 'Burn calories and improve overall fitness',
+    color: '#3b82f6',
+  },
+  {
+    id: '5k',
+    title: '5K Training',
+    description: 'Build up to running 5K without stopping',
+    color: '#f59e0b',
+  },
+  {
+    id: '10k',
+    title: '10K Training',
+    description: 'Build endurance for longer distances',
+    color: '#8b5cf6',
+  },
+  {
+    id: 'half-marathon',
+    title: 'Half Marathon',
+    description: 'Train for 21.1K challenge',
+    color: '#ef4444',
+  },
+  {
+    id: 'marathon',
+    title: 'Marathon',
+    description: 'Ultimate 42.2K goal',
+    color: '#06b6d4',
+  },
+  {
+    id: 'ultra',
+    title: 'Ultra Running',
+    description: 'Go beyond marathon distances',
+    color: '#7c3aed',
+  },
+];
+
+const timePreferences = [
+  'Early Morning (5-7 AM)',
+  'Morning (7-9 AM)',
+  'Late Morning (9-11 AM)',
+  'Afternoon (12-3 PM)',
+  'Late Afternoon (3-5 PM)',
+  'Evening (5-7 PM)',
+  'Night (7-9 PM)',
+];
 
 export default function OnboardingGoalsScreen() {
   const router = useRouter();
   const [goalsData, setGoalsData] = useState<GoalsData>({
     primaryGoal: '',
-    targetDistance: '',
-    timeframe: '',
-    currentActivity: '',
-    targetRaceDate: '',
-    weeklyDays: '',
+    targetDate: '',
+    weeklyAvailability: '',
+    preferredTimes: [],
   });
-
-  const primaryGoals = [
-    {
-      id: 'complete-first-5k',
-      title: 'Complete my first 5K',
-      description: 'Build up to running 5K without stopping',
-      icon: Target,
-      color: '#22c55e',
-    },
-    {
-      id: 'improve-time',
-      title: 'Improve my race times',
-      description: 'Get faster and beat personal records',
-      icon: Trophy,
-      color: '#3b82f6',
-    },
-    {
-      id: 'longer-distances',
-      title: 'Run longer distances',
-      description: 'Build endurance for 10K, half marathon, or marathon',
-      icon: TrendingUp,
-      color: '#f59e0b',
-    },
-    {
-      id: 'stay-healthy',
-      title: 'Stay fit and healthy',
-      description: 'Maintain fitness and enjoy regular running',
-      icon: Calendar,
-      color: '#8b5cf6',
-    },
-  ];
-
-  const targetDistances = [
-    { id: '5k', title: '5K', description: 'Great for beginners' },
-    { id: '10k', title: '10K', description: 'Build endurance' },
-    {
-      id: 'half-marathon',
-      title: 'Half Marathon',
-      description: '21.1K challenge',
-    },
-    { id: 'marathon', title: 'Marathon', description: '42.2K ultimate goal' },
-    {
-      id: 'just-running',
-      title: 'Just running',
-      description: 'No specific distance',
-    },
-  ];
-
-  const timeframes = [
-    { id: '4-weeks', title: '4 weeks', description: 'Quick improvement' },
-    { id: '8-weeks', title: '8 weeks', description: 'Balanced progress' },
-    { id: '12-weeks', title: '12 weeks', description: 'Steady development' },
-    { id: '16-weeks', title: '16+ weeks', description: 'Long-term training' },
-  ];
-
-  const currentActivityLevels = [
-    {
-      id: 'none',
-      title: 'Not running regularly',
-      description: 'Starting fresh',
-    },
-    {
-      id: '1-2-times',
-      title: '1-2 times per week',
-      description: 'Some experience',
-    },
-    {
-      id: '3-4-times',
-      title: '3-4 times per week',
-      description: 'Regular runner',
-    },
-    { id: '5-plus', title: '5+ times per week', description: 'Very active' },
-  ];
-
-  const weeklyDaysOptions = [
-    { id: '2-days', title: '2 days', description: 'Light commitment' },
-    { id: '3-days', title: '3 days', description: 'Balanced schedule' },
-    { id: '4-days', title: '4 days', description: 'Regular training' },
-    { id: '5-days', title: '5 days', description: 'Serious commitment' },
-    { id: '6-plus', title: '6+ days', description: 'Elite level' },
-  ];
 
   const isFormValid = () => {
     return (
-      goalsData.primaryGoal &&
-      goalsData.targetDistance &&
-      goalsData.timeframe &&
-      goalsData.currentActivity &&
-      goalsData.weeklyDays
+      goalsData.primaryGoal !== '' &&
+      goalsData.weeklyAvailability !== '' &&
+      goalsData.preferredTimes.length > 0
     );
   };
 
@@ -148,77 +111,20 @@ export default function OnboardingGoalsScreen() {
     router.back();
   };
 
-  const renderOptionGroup = (
-    title: string,
-    subtitle: string,
-    options: any[],
-    selectedValue: string,
-    onSelect: (value: string) => void,
-    showIcon = false,
-  ) => (
-    <View style={styles.formGroup}>
-      <Text style={styles.label}>{title}</Text>
-      {subtitle && <Text style={styles.labelSubtitle}>{subtitle}</Text>}
+  const handleInputChange = (field: keyof GoalsData, value: string) => {
+    setGoalsData((prev) => ({ ...prev, [field]: value }));
+  };
 
-      <View style={styles.optionsContainer}>
-        {options.map((option) => {
-          const isSelected = selectedValue === option.id;
-          const IconComponent = option.icon;
+  const handleTimeToggle = (time: string) => {
+    setGoalsData((prev) => ({
+      ...prev,
+      preferredTimes: prev.preferredTimes.includes(time)
+        ? prev.preferredTimes.filter((t) => t !== time)
+        : [...prev.preferredTimes, time],
+    }));
+  };
 
-          return (
-            <TouchableOpacity
-              key={option.id}
-              style={[
-                styles.optionCard,
-                isSelected && {
-                  backgroundColor: (option.color || '#22c55e') + '20',
-                  borderColor: option.color || '#22c55e',
-                },
-              ]}
-              onPress={() => onSelect(option.id)}
-            >
-              {showIcon && IconComponent && (
-                <View
-                  style={[
-                    styles.optionIcon,
-                    { backgroundColor: (option.color || '#22c55e') + '20' },
-                  ]}
-                >
-                  <IconComponent
-                    size={20}
-                    color={isSelected ? option.color : 'rgba(255,255,255,0.8)'}
-                  />
-                </View>
-              )}
-              <View style={styles.optionContent}>
-                <Text
-                  style={[
-                    styles.optionTitle,
-                    isSelected && { color: option.color || '#22c55e' },
-                  ]}
-                >
-                  {option.title}
-                </Text>
-                <Text style={styles.optionDescription}>
-                  {option.description}
-                </Text>
-              </View>
-              {isSelected && (
-                <View style={styles.selectedIndicator}>
-                  <View
-                    style={[
-                      styles.selectedDot,
-                      { backgroundColor: option.color || '#22c55e' },
-                    ]}
-                  />
-                </View>
-              )}
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
+  const selectedGoal = goalOptions.find((g) => g.id === goalsData.primaryGoal);
 
   return (
     <>
@@ -228,106 +134,184 @@ export default function OnboardingGoalsScreen() {
           style={styles.container}
           showsVerticalScrollIndicator={false}
         >
-          <View style={styles.header}>
-            <TouchableOpacity style={styles.backButton} onPress={handleBack}>
-              <ArrowLeft size={24} color="#fff" />
-            </TouchableOpacity>
-
-            <View style={styles.headerContent}>
-              <View style={styles.iconContainer}>
-                <Target size={28} color="#fff" />
-              </View>
-              <Text style={styles.title}>Set your goals</Text>
-              <Text style={styles.subtitle}>
-                Help us create the perfect training plan for your aspirations
-              </Text>
-            </View>
-          </View>
+          <OnboardingHeader
+            title="Set Your Goals"
+            subtitle="Help us create the perfect training plan for your aspirations"
+            icon={<Target size={28} color="#fff" />}
+            onBack={handleBack}
+          />
 
           <View style={styles.content}>
-            {renderOptionGroup(
-              "What's your main running goal?",
-              'Choose your primary objective for the training plan',
-              primaryGoals,
-              goalsData.primaryGoal,
-              (value) => setGoalsData({ ...goalsData, primaryGoal: value }),
-              true,
-            )}
-
-            {renderOptionGroup(
-              'What distance are you targeting?',
-              'Select your target race distance or running goal',
-              targetDistances,
-              goalsData.targetDistance,
-              (value) => setGoalsData({ ...goalsData, targetDistance: value }),
-            )}
-
-            {renderOptionGroup(
-              "What's your timeframe?",
-              'How long do you want to work towards your goal?',
-              timeframes,
-              goalsData.timeframe,
-              (value) => setGoalsData({ ...goalsData, timeframe: value }),
-            )}
-
-            {renderOptionGroup(
-              'How often do you currently run?',
-              'Select your current running frequency',
-              currentActivityLevels,
-              goalsData.currentActivity,
-              (value) => setGoalsData({ ...goalsData, currentActivity: value }),
-            )}
-
-            {renderOptionGroup(
-              'How many days per week can you train?',
-              'Be realistic about your time commitment',
-              weeklyDaysOptions,
-              goalsData.weeklyDays,
-              (value) => setGoalsData({ ...goalsData, weeklyDays: value }),
-            )}
-
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryHeader}>
-                <MapPin size={16} color="#22c55e" />
-                <Text style={styles.summaryTitle}>Your Goal Summary</Text>
+            {/* Primary Goal */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Target size={20} color="rgba(255, 255, 255, 0.8)" />
+                <Text style={styles.sectionTitle}>
+                  What's your main running goal? *
+                </Text>
               </View>
-              <Text style={styles.summaryText}>
-                Based on your selections, we&apos;ll create a personalized
-                training plan to help you achieve your running goals within your
-                desired timeframe.
-              </Text>
+
+              <View style={styles.goalsContainer}>
+                {goalOptions.map((goal) => (
+                  <SelectionCard
+                    key={goal.id}
+                    title={goal.title}
+                    description={goal.description}
+                    isSelected={goalsData.primaryGoal === goal.id}
+                    onPress={() => handleInputChange('primaryGoal', goal.id)}
+                    color={goal.color}
+                  />
+                ))}
+              </View>
             </View>
+
+            {/* Target Date */}
+            {goalsData.primaryGoal &&
+              !['general-fitness', 'weight-loss'].includes(
+                goalsData.primaryGoal,
+              ) && (
+                <View style={styles.section}>
+                  <View style={styles.sectionHeader}>
+                    <Calendar size={20} color="rgba(255, 255, 255, 0.8)" />
+                    <Text style={styles.sectionTitle}>Target Date</Text>
+                  </View>
+                  <Text style={styles.sectionSubtitle}>
+                    When do you want to achieve your{' '}
+                    {selectedGoal?.title.toLowerCase()} goal?
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.dateInput}
+                    onPress={() => {
+                      // In a real app, you'd open a date picker here
+                      Alert.alert('Date Picker', 'Date picker would open here');
+                    }}
+                  >
+                    <Text style={styles.dateInputText}>
+                      {goalsData.targetDate || 'Select target date'}
+                    </Text>
+                    <Calendar size={20} color="rgba(255, 255, 255, 0.6)" />
+                  </TouchableOpacity>
+                </View>
+              )}
+
+            {/* Weekly Availability */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Clock size={20} color="rgba(255, 255, 255, 0.8)" />
+                <Text style={styles.sectionTitle}>
+                  How many days per week can you train? *
+                </Text>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                Be realistic about your time commitment. Consistency is more
+                important than intensity.
+              </Text>
+
+              <View style={styles.availabilityContainer}>
+                {[1, 2, 3, 4, 5, 6, 7].map((days) => (
+                  <TouchableOpacity
+                    key={days}
+                    style={[
+                      styles.availabilityOption,
+                      goalsData.weeklyAvailability === days.toString() &&
+                        styles.availabilityOptionSelected,
+                    ]}
+                    onPress={() =>
+                      handleInputChange('weeklyAvailability', days.toString())
+                    }
+                  >
+                    <Text
+                      style={[
+                        styles.availabilityOptionText,
+                        goalsData.weeklyAvailability === days.toString() &&
+                          styles.availabilityOptionTextSelected,
+                      ]}
+                    >
+                      {days} {days === 1 ? 'day' : 'days'} per week
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Time Preferences */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <Clock size={20} color="rgba(255, 255, 255, 0.8)" />
+                <Text style={styles.sectionTitle}>
+                  Preferred training times *
+                </Text>
+              </View>
+              <Text style={styles.sectionSubtitle}>
+                Select all times that work for your schedule. We'll create
+                workouts around your availability.
+              </Text>
+
+              <View style={styles.timePreferencesContainer}>
+                {timePreferences.map((time) => (
+                  <TouchableOpacity
+                    key={time}
+                    style={[
+                      styles.timeOption,
+                      goalsData.preferredTimes.includes(time) &&
+                        styles.timeOptionSelected,
+                    ]}
+                    onPress={() => handleTimeToggle(time)}
+                  >
+                    <View style={styles.timeCheckbox}>
+                      {goalsData.preferredTimes.includes(time) && (
+                        <CheckCircle size={16} color="#22c55e" />
+                      )}
+                    </View>
+                    <Text style={styles.timeOptionText}>{time}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Summary */}
+            {goalsData.primaryGoal &&
+              goalsData.weeklyAvailability &&
+              goalsData.preferredTimes.length > 0 && (
+                <View style={styles.summaryCard}>
+                  <View style={styles.summaryHeader}>
+                    <CheckCircle size={16} color="#22c55e" />
+                    <Text style={styles.summaryTitle}>
+                      Training Plan Preview
+                    </Text>
+                  </View>
+                  <View style={styles.summaryContent}>
+                    <Text style={styles.summaryText}>
+                      <Text style={styles.summaryLabel}>Goal:</Text>{' '}
+                      {selectedGoal?.title}
+                      {goalsData.targetDate && ` by ${goalsData.targetDate}`}
+                    </Text>
+                    <Text style={styles.summaryText}>
+                      <Text style={styles.summaryLabel}>Frequency:</Text>{' '}
+                      {goalsData.weeklyAvailability}{' '}
+                      {goalsData.weeklyAvailability === '1' ? 'day' : 'days'}{' '}
+                      per week
+                    </Text>
+                    <Text style={styles.summaryText}>
+                      <Text style={styles.summaryLabel}>Preferred Times:</Text>{' '}
+                      {goalsData.preferredTimes.join(', ')}
+                    </Text>
+                  </View>
+                </View>
+              )}
           </View>
 
           <View style={styles.footer}>
-            <View style={styles.progressContainer}>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: '37.5%' }]} />
-              </View>
-              <Text style={styles.progressText}>Step 3 of 8</Text>
-            </View>
+            <OnboardingProgress currentStep={3} totalSteps={8} />
 
-            <TouchableOpacity
-              style={[
-                styles.continueButton,
-                isFormValid() && styles.continueButtonActive,
-              ]}
+            <OnboardingButton
+              title="Continue"
               onPress={handleContinue}
               disabled={!isFormValid()}
-            >
-              <Text
-                style={[
-                  styles.continueButtonText,
-                  isFormValid() && styles.continueButtonTextActive,
-                ]}
-              >
-                Continue
-              </Text>
-              <ArrowRight
-                size={20}
-                color={isFormValid() ? '#fff' : 'rgba(255,255,255,0.5)'}
-              />
-            </TouchableOpacity>
+              variant="primary"
+              showArrow={true}
+              arrowDirection="right"
+            />
           </View>
         </ScrollView>
       </GradientBackground>
@@ -339,110 +323,100 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    paddingTop: 60,
-    paddingHorizontal: 20,
-    paddingBottom: 30,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  headerContent: {
-    alignItems: 'center',
-  },
-  iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  title: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 24,
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: 10,
-  },
   content: {
     paddingHorizontal: 20,
   },
-  formGroup: {
+  section: {
     marginBottom: 32,
   },
-  label: {
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 18,
     color: '#fff',
-    marginBottom: 4,
+    marginLeft: 8,
   },
-  labelSubtitle: {
+  sectionSubtitle: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.7)',
     marginBottom: 16,
     lineHeight: 20,
   },
-  optionsContainer: {
+  goalsContainer: {
     gap: 12,
   },
-  optionCard: {
+  dateInput: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
     padding: 16,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  optionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  optionContent: {
-    flex: 1,
-  },
-  optionTitle: {
-    fontFamily: 'Inter-SemiBold',
+  dateInputText: {
+    fontFamily: 'Inter-Regular',
     fontSize: 16,
-    color: '#fff',
-    marginBottom: 4,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
-  optionDescription: {
+  availabilityContainer: {
+    gap: 8,
+  },
+  availabilityOption: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  availabilityOptionSelected: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  availabilityOptionText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.7)',
-    lineHeight: 20,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
-  selectedIndicator: {
-    marginLeft: 12,
+  availabilityOptionTextSelected: {
+    color: '#fff',
   },
-  selectedDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  timePreferencesContainer: {
+    gap: 8,
+  },
+  timeOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  timeOptionSelected: {
+    backgroundColor: 'rgba(34, 197, 94, 0.1)',
+    borderColor: '#22c55e',
+  },
+  timeCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  timeOptionText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
   },
   summaryCard: {
     backgroundColor: 'rgba(34, 197, 94, 0.1)',
@@ -463,60 +437,22 @@ const styles = StyleSheet.create({
     color: '#22c55e',
     marginLeft: 8,
   },
+  summaryContent: {
+    gap: 4,
+  },
   summaryText: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
     color: 'rgba(255, 255, 255, 0.8)',
     lineHeight: 20,
   },
+  summaryLabel: {
+    fontFamily: 'Inter-SemiBold',
+    color: '#22c55e',
+  },
   footer: {
     paddingHorizontal: 20,
     paddingBottom: 40,
     paddingTop: 20,
-  },
-  progressContainer: {
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  progressBar: {
-    width: '100%',
-    height: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 8,
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#22c55e',
-    borderRadius: 3,
-  },
-  progressText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.6)',
-  },
-  continueButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
-    height: 56,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    gap: 8,
-  },
-  continueButtonActive: {
-    backgroundColor: '#22c55e',
-    borderColor: '#22c55e',
-  },
-  continueButtonText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.5)',
-  },
-  continueButtonTextActive: {
-    color: '#fff',
   },
 });

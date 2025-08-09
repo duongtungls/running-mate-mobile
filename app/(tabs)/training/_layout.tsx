@@ -11,6 +11,8 @@ export default function TrainingLayout() {
           animation: 'slide_from_bottom',
         }}
       />
+      <Stack.Screen name="generate-plan" />
+      <Stack.Screen name="program" />
     </Stack>
   );
 }

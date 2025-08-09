@@ -1,0 +1,11 @@
+node_modules
+.expo
+dist
+.next
+coverage
+storybook-static
+android
+ios
+web-build
+expo-build
+

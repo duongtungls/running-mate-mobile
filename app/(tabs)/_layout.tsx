@@ -4,6 +4,7 @@ import {
   Chrome as Home,
   FileWarning as Running,
   User,
+  Settings,
 } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -47,6 +48,15 @@ export default function TabLayout() {
         options={{
           title: 'Profile',
           tabBarIcon: ({ size, color }) => <User size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ size, color }) => (
+            <Settings size={size} color={color} />
+          ),
         }}
       />
     </Tabs>
