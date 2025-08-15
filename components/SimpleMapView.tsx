@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -62,7 +62,7 @@ const decodePolyline = (encoded: string): [number, number][] => {
   return coordinates;
 };
 
-export default function SimpleMapView({
+export function SimpleMapView({
   startLatLng,
   endLatLng,
   polyline,
@@ -277,6 +277,8 @@ export default function SimpleMapView({
     </>
   );
 }
+
+export default memo(SimpleMapView);
 
 const styles = StyleSheet.create({
   container: {

@@ -9,7 +9,10 @@ import {
   Dimensions,
 } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import { NavigationContainer } from '@react-navigation/native';
 import SimpleMapView from '../../components/SimpleMapView';
+import ActivityCharts from '../../components/ActivityCharts';
 import {
   ArrowLeft,
   Calendar,
@@ -24,6 +27,9 @@ import {
   Share,
   Bookmark,
   Target,
+  BarChart3,
+  Activity as ActivityIcon,
+  Thermometer,
 } from 'lucide-react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useState, useEffect } from 'react';
@@ -31,6 +37,10 @@ import GradientBackground from '../../components/GradientBackground';
 import { useActivity } from '@/contexts/ActivityContext';
 import { activityAPI, lapsAPI } from '@/lib/activity-api';
 import { Activity } from '@/types/activity';
+
+const Tab = createMaterialTopTabNavigator();
+
+type TabType = 'overview' | 'stats' | 'laps' | 'charts';
 
 const getActivityIcon = (type: string) => {
   const activityType = type.toLowerCase();
@@ -164,6 +174,328 @@ const formatLocation = (
   return 'Unknown Location';
 };
 
+// Tab Screen Components
+function OverviewScreen({
+  activity,
+  hasElevation,
+  refreshing,
+  onRefresh,
+}: any) {
+  return (
+    <ScrollView
+      style={styles.tabContent}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor="rgba(255, 255, 255, 0.8)"
+        />
+      }
+    >
+      {/* Map Section */}
+      <View style={styles.mapContainer}>
+        <SimpleMapView
+          startLatLng={activity.start_latlng}
+          endLatLng={activity.end_latlng}
+          polyline={activity.map?.polyline || activity.map?.summary_polyline}
+        />
+      </View>
+
+      {/* Key Stats Grid */}
+      <View style={styles.overviewStats}>
+        {activity.average_heartrate && (
+          <View style={styles.overviewStatCard}>
+            <Heart size={24} color="#ef4444" />
+            <Text style={styles.overviewStatValue}>
+              {Math.round(activity.average_heartrate)}
+            </Text>
+            <Text style={styles.overviewStatLabel}>Avg HR</Text>
+          </View>
+        )}
+
+        <View style={styles.overviewStatCard}>
+          <TrendingUp size={24} color="#10b981" />
+          <Text style={styles.overviewStatValue}>
+            {activity.average_speed
+              ? formatPaceOrSpeed(
+                  activity.average_speed,
+                  activity.activity_type,
+                )
+              : 'N/A'}
+          </Text>
+          <Text style={styles.overviewStatLabel}>
+            {activity.activity_type.toLowerCase().includes('ride')
+              ? 'Avg Speed'
+              : 'Avg Pace'}
+          </Text>
+        </View>
+
+        <View style={styles.overviewStatCard}>
+          <Clock size={24} color="#3b82f6" />
+          <Text style={styles.overviewStatValue}>
+            {formatTime(activity.moving_time || 0)}
+          </Text>
+          <Text style={styles.overviewStatLabel}>Time</Text>
+        </View>
+
+        {activity.calories && (
+          <View style={styles.overviewStatCard}>
+            <Flame size={24} color="#f59e0b" />
+            <Text style={styles.overviewStatValue}>
+              {Math.round(activity.calories)}
+            </Text>
+            <Text style={styles.overviewStatLabel}>Calories</Text>
+          </View>
+        )}
+      </View>
+
+      {/* AI Analysis */}
+      {activity.description && (
+        <View style={styles.analysisContainer}>
+          <View style={styles.sectionHeader}>
+            <Zap size={20} color="#10b981" />
+            <Text style={styles.sectionTitle}>AI Analysis</Text>
+          </View>
+          <View style={styles.analysisCard}>
+            <Markdown style={markdownStyles}>{activity.description}</Markdown>
+          </View>
+        </View>
+      )}
+    </ScrollView>
+  );
+}
+
+function StatsScreen({ activity, hasDistance, hasElevation }: any) {
+  return (
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.statsGrid}>
+        {/* Distance & Speed Stats */}
+        {hasDistance && (
+          <View style={styles.statCategory}>
+            <Text style={styles.categoryTitle}>Distance & Speed</Text>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Total Distance</Text>
+              <Text style={styles.statValue}>
+                {formatDistance(activity.distance)}
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Average Speed</Text>
+              <Text style={styles.statValue}>
+                {activity.average_speed
+                  ? (activity.average_speed * 3.6).toFixed(1) + ' km/h'
+                  : 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Max Speed</Text>
+              <Text style={styles.statValue}>
+                {activity.max_speed
+                  ? (activity.max_speed * 3.6).toFixed(1) + ' km/h'
+                  : 'N/A'}
+              </Text>
+            </View>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Average Pace</Text>
+              <Text style={styles.statValue}>
+                {activity.average_speed
+                  ? formatPaceOrSpeed(
+                      activity.average_speed,
+                      activity.activity_type,
+                    )
+                  : 'N/A'}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Timing Stats */}
+        <View style={styles.statCategory}>
+          <Text style={styles.categoryTitle}>Timing</Text>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Moving Time</Text>
+            <Text style={styles.statValue}>
+              {formatTime(activity.moving_time || 0)}
+            </Text>
+          </View>
+          <View style={styles.statRow}>
+            <Text style={styles.statLabel}>Elapsed Time</Text>
+            <Text style={styles.statValue}>
+              {formatTime(activity.elapsed_time || activity.moving_time || 0)}
+            </Text>
+          </View>
+        </View>
+
+        {/* Heart Rate Stats */}
+        {activity.average_heartrate && (
+          <View style={styles.statCategory}>
+            <Text style={styles.categoryTitle}>Heart Rate</Text>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Average HR</Text>
+              <Text style={styles.statValue}>
+                {Math.round(activity.average_heartrate)} bpm
+              </Text>
+            </View>
+            {activity.max_heartrate && (
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>Max HR</Text>
+                <Text style={styles.statValue}>
+                  {Math.round(activity.max_heartrate)} bpm
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Power Stats */}
+        {activity.average_watts && (
+          <View style={styles.statCategory}>
+            <Text style={styles.categoryTitle}>Power</Text>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Average Power</Text>
+              <Text style={styles.statValue}>
+                {Math.round(activity.average_watts)} W
+              </Text>
+            </View>
+            {activity.max_watts && (
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>Max Power</Text>
+                <Text style={styles.statValue}>
+                  {Math.round(activity.max_watts)} W
+                </Text>
+              </View>
+            )}
+            {activity.kilojoules && (
+              <View style={styles.statRow}>
+                <Text style={styles.statLabel}>Energy</Text>
+                <Text style={styles.statValue}>
+                  {Math.round(activity.kilojoules)} kJ
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Elevation Stats */}
+        {hasElevation && (
+          <View style={styles.statCategory}>
+            <Text style={styles.categoryTitle}>Elevation</Text>
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Total Elevation Gain</Text>
+              <Text style={styles.statValue}>
+                {formatElevation(activity.total_elevation_gain!)}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Other Stats */}
+        <View style={styles.statCategory}>
+          <Text style={styles.categoryTitle}>Other</Text>
+          {activity.calories && (
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Calories</Text>
+              <Text style={styles.statValue}>
+                {Math.round(activity.calories)}
+              </Text>
+            </View>
+          )}
+          {activity.average_cadence && (
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Average Cadence</Text>
+              <Text style={styles.statValue}>
+                {Math.round(activity.average_cadence)} spm
+              </Text>
+            </View>
+          )}
+          {activity.average_temp && (
+            <View style={styles.statRow}>
+              <Text style={styles.statLabel}>Temperature</Text>
+              <Text style={styles.statValue}>
+                {Math.round(activity.average_temp)}°C
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
+    </ScrollView>
+  );
+}
+
+function LapsScreen({ activity }: any) {
+  return (
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      <View style={styles.lapsContainer}>
+        {Array.from(
+          {
+            length: Math.max(1, Math.floor((activity.distance || 1000) / 1000)),
+          },
+          (_, index) => {
+            const lapNumber = index + 1;
+            const isLastLap =
+              lapNumber === Math.floor((activity.distance || 1000) / 1000);
+            const lapDistance = isLastLap
+              ? (activity.distance || 1000) % 1000 || 1000
+              : 1000;
+            const estimatedLapTime = activity.moving_time
+              ? Math.round(
+                  (activity.moving_time * lapDistance) /
+                    (activity.distance || 1),
+                )
+              : 0;
+            const lapPace = activity.average_speed
+              ? formatPaceOrSpeed(
+                  activity.average_speed,
+                  activity.activity_type,
+                )
+              : 'N/A';
+
+            return (
+              <View key={lapNumber} style={styles.lapCard}>
+                <View style={styles.lapHeader}>
+                  <Text style={styles.lapNumber}>Lap {lapNumber}</Text>
+                  <Text style={styles.lapDistance}>
+                    {formatDistance(lapDistance)}
+                  </Text>
+                </View>
+                <View style={styles.lapStats}>
+                  <View style={styles.lapStat}>
+                    <Clock size={12} color="rgba(255, 255, 255, 0.7)" />
+                    <Text style={styles.lapStatText}>
+                      {formatTime(estimatedLapTime)}
+                    </Text>
+                  </View>
+                  <View style={styles.lapStat}>
+                    <TrendingUp size={12} color="rgba(255, 255, 255, 0.7)" />
+                    <Text style={styles.lapStatText}>{lapPace}</Text>
+                  </View>
+                  {activity.average_heartrate && (
+                    <View style={styles.lapStat}>
+                      <Heart size={12} color="rgba(255, 255, 255, 0.7)" />
+                      <Text style={styles.lapStatText}>
+                        {Math.round(activity.average_heartrate)} bpm
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            );
+          },
+        )}
+      </View>
+    </ScrollView>
+  );
+}
+
+function ChartsScreen({ activity, hasElevation }: any) {
+  return (
+    <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
+      <ActivityCharts activity={activity} hasElevation={hasElevation} />
+    </ScrollView>
+  );
+}
+
 export default function ActivityDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -229,7 +561,7 @@ export default function ActivityDetailScreen() {
       <GradientBackground>
         <View style={styles.loadingContainer}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={styles.backButtonHeader}
             onPress={() => router.back()}
           >
             <ArrowLeft size={24} color="#fff" />
@@ -246,7 +578,7 @@ export default function ActivityDetailScreen() {
       <GradientBackground>
         <View style={styles.errorContainer}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={styles.backButtonHeader}
             onPress={() => router.back()}
           >
             <ArrowLeft size={24} color="#fff" />
@@ -269,18 +601,7 @@ export default function ActivityDetailScreen() {
 
   return (
     <GradientBackground>
-      <ScrollView
-        style={styles.container}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor="rgba(255, 255, 255, 0.8)"
-            titleColor="rgba(255, 255, 255, 0.8)"
-          />
-        }
-      >
+      <View style={styles.container}>
         {/* Header */}
         <View style={styles.headerContainer}>
           {/* Navigation Header */}
@@ -342,272 +663,89 @@ export default function ActivityDetailScreen() {
           </View>
         </View>
 
-        {/* Main Stats Row */}
-        <View style={styles.statsRow}>
-          {hasDistance && (
-            <View style={styles.compactStatCard}>
-              <MapPin size={16} color="#10b981" />
-              <Text style={styles.compactStatValue}>
-                {formatDistance(activity.distance)}
-              </Text>
-              <Text style={styles.compactStatLabel}>Distance</Text>
-            </View>
-          )}
-
-          <View style={styles.compactStatCard}>
-            <Clock size={16} color="#3b82f6" />
-            <Text style={styles.compactStatValue}>
-              {formatTime(activity.moving_time || 0)}
-            </Text>
-            <Text style={styles.compactStatLabel}>Time</Text>
-          </View>
-
-          {activity.average_speed && hasDistance && (
-            <View style={styles.compactStatCard}>
-              <TrendingUp size={16} color="#ef4444" />
-              <Text style={styles.compactStatValue}>
-                {formatPaceOrSpeed(
-                  activity.average_speed,
-                  activity.activity_type,
-                )}
-              </Text>
-              <Text style={styles.compactStatLabel}>
-                {activity.activity_type.toLowerCase().includes('ride')
-                  ? 'Speed'
-                  : 'Pace'}
-              </Text>
-            </View>
-          )}
-
-          {hasElevation && (
-            <View style={styles.compactStatCard}>
-              <Mountain size={16} color="#8b5cf6" />
-              <Text style={styles.compactStatValue}>
-                {formatElevation(activity.total_elevation_gain!)}
-              </Text>
-              <Text style={styles.compactStatLabel}>Elevation</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Performance Metrics */}
-        <View style={styles.metricsContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Performance Metrics</Text>
-          </View>
-
-          <View style={styles.metricsGrid}>
-            {activity.calories && (
-              <View style={styles.metricCard}>
-                <Flame size={20} color="#f59e0b" />
-                <Text style={styles.metricValue}>
-                  {Math.round(activity.calories)}
-                </Text>
-                <Text style={styles.metricLabel}>Calories</Text>
-              </View>
-            )}
-
-            {activity.average_heartrate && (
-              <View style={styles.metricCard}>
-                <Heart size={20} color="#ef4444" />
-                <Text style={styles.metricValue}>
-                  {Math.round(activity.average_heartrate)}
-                </Text>
-                <Text style={styles.metricLabel}>Avg HR</Text>
-              </View>
-            )}
-
-            {activity.max_heartrate && (
-              <View style={styles.metricCard}>
-                <Heart size={20} color="#dc2626" />
-                <Text style={styles.metricValue}>
-                  {Math.round(activity.max_heartrate)}
-                </Text>
-                <Text style={styles.metricLabel}>Max HR</Text>
-              </View>
-            )}
-
-            {activity.average_cadence && (
-              <View style={styles.metricCard}>
-                <Target size={20} color="#06b6d4" />
-                <Text style={styles.metricValue}>
-                  {Math.round(activity.average_cadence)}
-                </Text>
-                <Text style={styles.metricLabel}>Cadence</Text>
-              </View>
-            )}
-
-            {activity.average_watts && (
-              <View style={styles.metricCard}>
-                <Zap size={20} color="#fbbf24" />
-                <Text style={styles.metricValue}>
-                  {Math.round(activity.average_watts)}
-                </Text>
-                <Text style={styles.metricLabel}>Avg Power</Text>
-              </View>
-            )}
-
-            {activity.max_speed && (
-              <View style={styles.metricCard}>
-                <TrendingUp size={20} color="#10b981" />
-                <Text style={styles.metricValue}>
-                  {(activity.max_speed * 3.6).toFixed(1)} km/h
-                </Text>
-                <Text style={styles.metricLabel}>Max Speed</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        {/* Interactive Map */}
-        <View style={styles.mapContainer}>
-          <View style={styles.sectionHeader}>
-            <MapPin size={20} color="#6366f1" />
-            <Text style={styles.sectionTitle}>Route Map</Text>
-          </View>
-
-          <SimpleMapView
-            startLatLng={activity.start_latlng}
-            endLatLng={activity.end_latlng}
-            polyline={activity.map?.polyline || activity.map?.summary_polyline}
-          />
-        </View>
-
-        {/* AI Analysis in Description */}
-        {activity.description && (
-          <View style={styles.analysisContainer}>
-            <View style={styles.sectionHeader}>
-              <Zap size={20} color="#10b981" />
-              <Text style={styles.sectionTitle}>AI Analysis</Text>
-            </View>
-
-            <View style={styles.analysisCard}>
-              <Markdown style={markdownStyles}>{activity.description}</Markdown>
-            </View>
-          </View>
-        )}
-        {/* Laps Section */}
-        <View style={styles.lapsContainer}>
-          <View style={styles.sectionHeader}>
-            <Target size={20} color="#f59e0b" />
-            <Text style={styles.sectionTitle}>Laps</Text>
-          </View>
-
-          <View>
-            {/* Lap data: shows real laps from activity_laps table when available, otherwise estimates */}
-            {Array.from(
-              {
-                length: Math.max(
-                  1,
-                  Math.floor((activity.distance || 1000) / 1000),
+        {/* Material Top Tabs */}
+        <NavigationContainer independent={true}>
+          <Tab.Navigator
+            screenOptions={{
+              tabBarStyle: {
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                elevation: 0,
+                shadowOpacity: 0,
+                borderTopWidth: 0,
+                marginHorizontal: 20,
+                borderRadius: 12,
+                marginBottom: 10,
+                height: 50,
+              },
+              tabBarIndicatorStyle: {
+                backgroundColor: '#10b981',
+                height: 3,
+                borderRadius: 2,
+              },
+              tabBarLabelStyle: {
+                fontSize: 12,
+                fontFamily: 'Inter-SemiBold',
+                textTransform: 'none',
+                marginTop: -5,
+              },
+              tabBarActiveTintColor: '#10b981',
+              tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.6)',
+              tabBarItemStyle: {
+                paddingVertical: 8,
+              },
+              swipeEnabled: true,
+            }}
+          >
+            <Tab.Screen
+              name="Overview"
+              children={() => (
+                <OverviewScreen
+                  activity={activity}
+                  hasElevation={hasElevation}
+                  refreshing={refreshing}
+                  onRefresh={handleRefresh}
+                />
+              )}
+              options={{
+                tabBarIcon: ({ color }) => <MapPin size={18} color={color} />,
+              }}
+            />
+            <Tab.Screen
+              name="Stats"
+              children={() => (
+                <StatsScreen
+                  activity={activity}
+                  hasDistance={hasDistance}
+                  hasElevation={hasElevation}
+                />
+              )}
+              options={{
+                tabBarIcon: ({ color }) => (
+                  <ActivityIcon size={18} color={color} />
                 ),
-              },
-              (_, index) => {
-                const lapNumber = index + 1;
-                const isLastLap =
-                  lapNumber === Math.floor((activity.distance || 1000) / 1000);
-                const lapDistance = isLastLap
-                  ? (activity.distance || 1000) % 1000 || 1000
-                  : 1000;
-                const estimatedLapTime = activity.moving_time
-                  ? Math.round(
-                      (activity.moving_time * lapDistance) /
-                        (activity.distance || 1),
-                    )
-                  : 0;
-                const lapPace = activity.average_speed
-                  ? formatPaceOrSpeed(
-                      activity.average_speed,
-                      activity.activity_type,
-                    )
-                  : 'N/A';
-
-                return (
-                  <View key={lapNumber} style={styles.lapCard}>
-                    <View style={styles.lapHeader}>
-                      <Text style={styles.lapNumber}>Lap {lapNumber}</Text>
-                      <Text style={styles.lapDistance}>
-                        {formatDistance(lapDistance)}
-                      </Text>
-                    </View>
-                    <View style={styles.lapStats}>
-                      <View style={styles.lapStat}>
-                        <Clock size={12} color="rgba(255, 255, 255, 0.7)" />
-                        <Text style={styles.lapStatText}>
-                          {formatTime(estimatedLapTime)}
-                        </Text>
-                      </View>
-                      <View style={styles.lapStat}>
-                        <TrendingUp
-                          size={12}
-                          color="rgba(255, 255, 255, 0.7)"
-                        />
-                        <Text style={styles.lapStatText}>{lapPace}</Text>
-                      </View>
-                      {activity.average_heartrate && (
-                        <View style={styles.lapStat}>
-                          <Heart size={12} color="rgba(255, 255, 255, 0.7)" />
-                          <Text style={styles.lapStatText}>
-                            {Math.round(activity.average_heartrate)} bpm
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  </View>
-                );
-              },
-            )}
-          </View>
-        </View>
-
-        {/* Additional Stats */}
-        <View style={styles.additionalStatsContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Activity Details</Text>
-          </View>
-
-          <View style={styles.detailsGrid}>
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>Elapsed Time:</Text>
-              <Text style={styles.detailValue}>
-                {formatTime(activity.elapsed_time || activity.moving_time || 0)}
-              </Text>
-            </View>
-
-            {activity.kudos_count !== undefined && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Kudos:</Text>
-                <Text style={styles.detailValue}>{activity.kudos_count}</Text>
-              </View>
-            )}
-
-            {activity.comment_count !== undefined && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Comments:</Text>
-                <Text style={styles.detailValue}>{activity.comment_count}</Text>
-              </View>
-            )}
-
-            {activity.achievement_count !== undefined && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Achievements:</Text>
-                <Text style={styles.detailValue}>
-                  {activity.achievement_count}
-                </Text>
-              </View>
-            )}
-
-            {activity.trainer && (
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Indoor:</Text>
-                <Text style={styles.detailValue}>Yes</Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
+              }}
+            />
+            <Tab.Screen
+              name="Laps"
+              children={() => <LapsScreen activity={activity} />}
+              options={{
+                tabBarIcon: ({ color }) => <Target size={18} color={color} />,
+              }}
+            />
+            <Tab.Screen
+              name="Charts"
+              children={() => (
+                <ChartsScreen activity={activity} hasElevation={hasElevation} />
+              )}
+              options={{
+                tabBarIcon: ({ color }) => (
+                  <BarChart3 size={18} color={color} />
+                ),
+              }}
+            />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </View>
     </GradientBackground>
   );
 }
@@ -616,65 +754,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 100,
-  },
-  loadingText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginTop: 16,
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    paddingTop: 100,
-  },
-  errorText: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 18,
-    color: '#ef4444',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  retryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-  },
-  retryText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 16,
-    color: '#fff',
-  },
-  backButton: {
-    position: 'absolute',
-    top: 60,
-    left: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    borderRadius: 20,
-    padding: 8,
-    zIndex: 10,
-  },
   headerContainer: {
     paddingTop: 60,
-    paddingBottom: 20,
+    paddingBottom: 10,
   },
   navigationHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    marginBottom: 30,
+    marginBottom: 20,
   },
   backButtonHeader: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
@@ -744,93 +833,92 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
     flex: 1,
   },
-  statsRow: {
-    flexDirection: 'row',
-    padding: 20,
-    paddingBottom: 10,
-    gap: 8,
-  },
-  compactStatCard: {
+
+  // Tab styles
+  tabContent: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 12,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
-    minHeight: 80,
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    backgroundColor: 'transparent',
   },
-  compactStatValue: {
-    fontFamily: 'Inter-Bold',
-    fontSize: 16,
-    color: '#fff',
-    marginTop: 4,
-    marginBottom: 2,
-    textAlign: 'center',
+
+  // Overview tab styles
+  mapContainer: {
+    marginBottom: 20,
   },
-  compactStatLabel: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 10,
-    color: 'rgba(255, 255, 255, 0.8)',
-    textAlign: 'center',
-  },
-  metricsContainer: {
-    padding: 20,
-    paddingTop: 0,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
-    color: '#fff',
-  },
-  metricsGrid: {
+  overviewStats: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 12,
+    marginBottom: 20,
   },
-  metricCard: {
+  overviewStatCard: {
     flex: 1,
-    minWidth: '30%',
+    minWidth: '45%',
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  metricValue: {
+  overviewStatValue: {
     fontFamily: 'Inter-Bold',
-    fontSize: 16,
+    fontSize: 20,
     color: '#fff',
-    marginTop: 6,
-    marginBottom: 2,
+    marginTop: 8,
+    marginBottom: 4,
   },
-  metricLabel: {
+  overviewStatLabel: {
     fontFamily: 'Inter-Regular',
-    fontSize: 11,
+    fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
-  mapContainer: {
-    padding: 20,
-    paddingTop: 10,
+
+  // Stats tab styles
+  statsGrid: {
+    gap: 16,
   },
+  statCategory: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  categoryTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: '#fff',
+    marginBottom: 12,
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  statLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  statValue: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#fff',
+  },
+
+  // Laps tab styles
   lapsContainer: {
-    padding: 20,
-    paddingTop: 10,
+    gap: 8,
   },
   lapCard: {
     backgroundColor: 'rgba(255, 255, 255, 0.05)',
     borderRadius: 12,
     padding: 16,
-    marginBottom: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
@@ -864,9 +952,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.8)',
   },
+
+  // Analysis styles
   analysisContainer: {
-    padding: 20,
-    paddingTop: 0,
+    marginTop: 20,
   },
   analysisCard: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -877,37 +966,58 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(16, 185, 129, 0.3)',
   },
-  additionalStatsContainer: {
-    padding: 20,
-    paddingTop: 0,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
   },
-  detailsGrid: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 16,
+  sectionTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 18,
+    color: '#fff',
+  },
+
+  // Loading states
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     padding: 20,
+    paddingTop: 100,
+  },
+  loadingText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    paddingTop: 100,
+  },
+  errorText: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    color: '#ef4444',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  detailLabel: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-  },
-  detailValue: {
+  retryText: {
     fontFamily: 'Inter-SemiBold',
-    fontSize: 14,
+    fontSize: 16,
     color: '#fff',
-  },
-  bottomSpacing: {
-    height: 40,
   },
 });
 

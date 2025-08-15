@@ -2,6 +2,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, Text } from 'react-native';
 import { useState, useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { TrainingProvider } from '@/contexts/TrainingContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
@@ -36,23 +37,25 @@ export default function RootLayout() {
 
   try {
     return (
-      <AuthProvider>
-        <ProfileProvider>
-          <ActivityProvider>
-            <NotificationProvider>
-              <TrainingProvider>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="(auth)" />
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-                <StatusBar style="light" />
-              </TrainingProvider>
-            </NotificationProvider>
-          </ActivityProvider>
-        </ProfileProvider>
-      </AuthProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AuthProvider>
+          <ProfileProvider>
+            <ActivityProvider>
+              <NotificationProvider>
+                <TrainingProvider>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <StatusBar style="light" />
+                </TrainingProvider>
+              </NotificationProvider>
+            </ActivityProvider>
+          </ProfileProvider>
+        </AuthProvider>
+      </GestureHandlerRootView>
     );
   } catch (err) {
     console.error('[RootLayout] Error in render:', err);

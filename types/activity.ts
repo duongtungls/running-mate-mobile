@@ -27,6 +27,12 @@ export interface Activity {
   location_city?: string;
   location_state?: string;
   location_country?: string;
+  start_latlng?: number[];
+  end_latlng?: number[];
+  map?: {
+    polyline?: string;
+    summary_polyline?: string;
+  };
   achievement_count?: number;
   kudos_count?: number;
   comment_count?: number;
@@ -47,12 +53,14 @@ export interface Activity {
   max_speed?: number; // in m/s
   average_cadence?: number;
   average_watts?: number;
+  max_watts?: number;
   weighted_average_watts?: number;
   kilojoules?: number;
   device_watts?: boolean;
   has_heartrate?: boolean;
   average_heartrate?: number;
   max_heartrate?: number;
+  average_temp?: number;
   heartrate_opt_out?: boolean;
   display_hide_heartrate_option?: boolean;
   calories?: number;
