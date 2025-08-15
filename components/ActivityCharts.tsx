@@ -1,9 +1,5 @@
 import React, { memo } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import {
   Heart,
   TrendingUp,
@@ -19,158 +15,197 @@ interface ActivityChartsProps {
   hasElevation: boolean;
 }
 
-const ActivityCharts = memo(({ activity, hasElevation }: ActivityChartsProps) => {
-  const renderChart = (
-    title: string,
-    icon: React.ReactNode,
-    value: string,
-    unit: string,
-    color: string,
-    yAxisLabels: string[],
-    dataPoints: number[]
-  ) => (
-    <View style={styles.chartCard}>
-      <View style={styles.chartHeader}>
-        {icon}
-        <Text style={styles.chartTitle}>{title}</Text>
-        <View style={styles.chartStats}>
-          <Text style={styles.chartStatValue}>{value}</Text>
-          <Text style={styles.chartStatUnit}>{unit}</Text>
-        </View>
-      </View>
-      <View style={styles.garminChart}>
-        <View style={styles.chartYAxis}>
-          {yAxisLabels.map((label, index) => (
-            <Text key={index} style={styles.yAxisLabel}>{label}</Text>
-          ))}
-        </View>
-        <View style={styles.chartArea}>
-          <View style={styles.chartGrid}>
-            <View style={styles.gridLine} />
-            <View style={styles.gridLine} />
-            <View style={styles.gridLine} />
+const ActivityCharts = memo(
+  ({ activity, hasElevation }: ActivityChartsProps) => {
+    const renderChart = (
+      title: string,
+      icon: React.ReactNode,
+      value: string,
+      unit: string,
+      color: string,
+      yAxisLabels: string[],
+      dataPoints: number[],
+    ) => (
+      <View style={styles.chartCard}>
+        <View style={styles.chartHeader}>
+          {icon}
+          <Text style={styles.chartTitle}>{title}</Text>
+          <View style={styles.chartStats}>
+            <Text style={styles.chartStatValue}>{value}</Text>
+            <Text style={styles.chartStatUnit}>{unit}</Text>
           </View>
-          <View style={styles.chartLineContainer}>
-            {dataPoints.map((height, index, array) => (
-              <View key={index} style={[styles.chartPoint, { bottom: `${height * 80}%`, left: `${(index / (array.length - 1)) * 100}%` }]}>
-                <View style={[styles.chartDot, { backgroundColor: color }]} />
-                {index < array.length - 1 && (
-                  <View 
-                    style={[
-                      styles.chartSegment, 
-                      { 
-                        backgroundColor: color,
-                        height: Math.abs(array[index + 1] - height) * 80 + 4,
-                        transform: [{ 
-                          rotate: array[index + 1] > height ? '-45deg' : '45deg' 
-                        }]
-                      }
-                    ]} 
-                  />
-                )}
-              </View>
+        </View>
+        <View style={styles.garminChart}>
+          <View style={styles.chartYAxis}>
+            {yAxisLabels.map((label, index) => (
+              <Text key={index} style={styles.yAxisLabel}>
+                {label}
+              </Text>
             ))}
           </View>
+          <View style={styles.chartArea}>
+            <View style={styles.chartGrid}>
+              <View style={styles.gridLine} />
+              <View style={styles.gridLine} />
+              <View style={styles.gridLine} />
+            </View>
+            <View style={styles.chartLineContainer}>
+              {dataPoints.map((height, index, array) => (
+                <View
+                  key={index}
+                  style={[
+                    styles.chartPoint,
+                    {
+                      bottom: `${height * 80}%`,
+                      left: `${(index / (array.length - 1)) * 100}%`,
+                    },
+                  ]}
+                >
+                  <View style={[styles.chartDot, { backgroundColor: color }]} />
+                  {index < array.length - 1 && (
+                    <View
+                      style={[
+                        styles.chartSegment,
+                        {
+                          backgroundColor: color,
+                          height: Math.abs(array[index + 1] - height) * 80 + 4,
+                          transform: [
+                            {
+                              rotate:
+                                array[index + 1] > height ? '-45deg' : '45deg',
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                  )}
+                </View>
+              ))}
+            </View>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
 
-  return (
-    <View style={styles.chartsGrid}>
-      {/* Pace Chart */}
-      {renderChart(
-        'Pace',
-        <TrendingUp size={18} color="#10b981" />,
-        '4:52',
-        '/km',
-        '#10b981',
-        ['5:20', '5:00', '4:40', '4:20'],
-        [0.8, 0.6, 0.9, 0.4, 0.7, 0.5, 0.8, 0.3, 0.6, 0.9, 0.7, 0.5, 0.8, 0.6, 0.9, 0.4, 0.7, 0.8, 0.5, 0.6]
-      )}
+    return (
+      <View style={styles.chartsGrid}>
+        {/* Pace Chart */}
+        {renderChart(
+          'Pace',
+          <TrendingUp size={18} color="#10b981" />,
+          '4:52',
+          '/km',
+          '#10b981',
+          ['5:20', '5:00', '4:40', '4:20'],
+          [
+            0.8, 0.6, 0.9, 0.4, 0.7, 0.5, 0.8, 0.3, 0.6, 0.9, 0.7, 0.5, 0.8,
+            0.6, 0.9, 0.4, 0.7, 0.8, 0.5, 0.6,
+          ],
+        )}
 
-      {/* Heart Rate Chart */}
-      {activity.average_heartrate && renderChart(
-        'Heart Rate',
-        <Heart size={18} color="#ef4444" />,
-        Math.round(activity.average_heartrate).toString(),
-        'bpm',
-        '#ef4444',
-        [
-          Math.round(activity.average_heartrate * 1.2).toString(),
-          Math.round(activity.average_heartrate * 1.1).toString(),
-          Math.round(activity.average_heartrate).toString(),
-          Math.round(activity.average_heartrate * 0.8).toString()
-        ],
-        [0.6, 0.7, 0.8, 0.9, 0.85, 0.9, 0.95, 0.8, 0.7, 0.6, 0.75, 0.85, 0.9, 0.8, 0.7, 0.8, 0.9, 0.85, 0.75, 0.6]
-      )}
+        {/* Heart Rate Chart */}
+        {activity.average_heartrate &&
+          renderChart(
+            'Heart Rate',
+            <Heart size={18} color="#ef4444" />,
+            Math.round(activity.average_heartrate).toString(),
+            'bpm',
+            '#ef4444',
+            [
+              Math.round(activity.average_heartrate * 1.2).toString(),
+              Math.round(activity.average_heartrate * 1.1).toString(),
+              Math.round(activity.average_heartrate).toString(),
+              Math.round(activity.average_heartrate * 0.8).toString(),
+            ],
+            [
+              0.6, 0.7, 0.8, 0.9, 0.85, 0.9, 0.95, 0.8, 0.7, 0.6, 0.75, 0.85,
+              0.9, 0.8, 0.7, 0.8, 0.9, 0.85, 0.75, 0.6,
+            ],
+          )}
 
-      {/* Elevation Chart */}
-      {hasElevation && renderChart(
-        'Elevation',
-        <Mountain size={18} color="#8b5cf6" />,
-        Math.round(activity.total_elevation_gain!).toString(),
-        'm',
-        '#8b5cf6',
-        [
-          Math.round(activity.total_elevation_gain!).toString(),
-          Math.round(activity.total_elevation_gain! * 0.7).toString(),
-          Math.round(activity.total_elevation_gain! * 0.4).toString(),
-          '0'
-        ],
-        [0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 0.8, 0.6, 0.4, 0.3, 0.4, 0.6, 0.8, 0.9, 0.7, 0.5, 0.3, 0.2, 0.1, 0.0]
-      )}
+        {/* Elevation Chart */}
+        {hasElevation &&
+          renderChart(
+            'Elevation',
+            <Mountain size={18} color="#8b5cf6" />,
+            Math.round(activity.total_elevation_gain!).toString(),
+            'm',
+            '#8b5cf6',
+            [
+              Math.round(activity.total_elevation_gain!).toString(),
+              Math.round(activity.total_elevation_gain! * 0.7).toString(),
+              Math.round(activity.total_elevation_gain! * 0.4).toString(),
+              '0',
+            ],
+            [
+              0.2, 0.3, 0.5, 0.7, 0.9, 1.0, 0.8, 0.6, 0.4, 0.3, 0.4, 0.6, 0.8,
+              0.9, 0.7, 0.5, 0.3, 0.2, 0.1, 0.0,
+            ],
+          )}
 
-      {/* Power Chart */}
-      {activity.average_watts && renderChart(
-        'Power',
-        <Zap size={18} color="#f59e0b" />,
-        Math.round(activity.average_watts).toString(),
-        'W',
-        '#f59e0b',
-        [
-          Math.round(activity.average_watts * 1.3).toString(),
-          Math.round(activity.average_watts * 1.1).toString(),
-          Math.round(activity.average_watts * 0.9).toString(),
-          Math.round(activity.average_watts * 0.7).toString()
-        ],
-        [0.7, 0.8, 0.6, 0.9, 0.75, 0.85, 0.7, 0.6, 0.8, 0.9, 0.8, 0.7, 0.9, 0.75, 0.6, 0.8, 0.85, 0.9, 0.7, 0.6]
-      )}
+        {/* Power Chart */}
+        {activity.average_watts &&
+          renderChart(
+            'Power',
+            <Zap size={18} color="#f59e0b" />,
+            Math.round(activity.average_watts).toString(),
+            'W',
+            '#f59e0b',
+            [
+              Math.round(activity.average_watts * 1.3).toString(),
+              Math.round(activity.average_watts * 1.1).toString(),
+              Math.round(activity.average_watts * 0.9).toString(),
+              Math.round(activity.average_watts * 0.7).toString(),
+            ],
+            [
+              0.7, 0.8, 0.6, 0.9, 0.75, 0.85, 0.7, 0.6, 0.8, 0.9, 0.8, 0.7, 0.9,
+              0.75, 0.6, 0.8, 0.85, 0.9, 0.7, 0.6,
+            ],
+          )}
 
-      {/* Cadence Chart */}
-      {activity.average_cadence && renderChart(
-        'Cadence',
-        <Target size={18} color="#06b6d4" />,
-        Math.round(activity.average_cadence * 2).toString(),
-        'spm',
-        '#06b6d4',
-        [
-          Math.round(activity.average_cadence * 2.2).toString(),
-          Math.round(activity.average_cadence * 2.1).toString(),
-          Math.round(activity.average_cadence * 2.0).toString(),
-          Math.round(activity.average_cadence * 1.8).toString()
-        ],
-        [0.8, 0.85, 0.9, 0.88, 0.92, 0.87, 0.9, 0.85, 0.88, 0.9, 0.87, 0.89, 0.91, 0.88, 0.86, 0.9, 0.92, 0.89, 0.87, 0.85]
-      )}
+        {/* Cadence Chart */}
+        {activity.average_cadence &&
+          renderChart(
+            'Cadence',
+            <Target size={18} color="#06b6d4" />,
+            Math.round(activity.average_cadence * 2).toString(),
+            'spm',
+            '#06b6d4',
+            [
+              Math.round(activity.average_cadence * 2.2).toString(),
+              Math.round(activity.average_cadence * 2.1).toString(),
+              Math.round(activity.average_cadence * 2.0).toString(),
+              Math.round(activity.average_cadence * 1.8).toString(),
+            ],
+            [
+              0.8, 0.85, 0.9, 0.88, 0.92, 0.87, 0.9, 0.85, 0.88, 0.9, 0.87,
+              0.89, 0.91, 0.88, 0.86, 0.9, 0.92, 0.89, 0.87, 0.85,
+            ],
+          )}
 
-      {/* Temperature Chart */}
-      {activity.average_temp && renderChart(
-        'Temperature',
-        <Thermometer size={18} color="#f97316" />,
-        Math.round(activity.average_temp).toString(),
-        '°C',
-        '#f97316',
-        [
-          Math.round(activity.average_temp + 5).toString(),
-          Math.round(activity.average_temp + 2).toString(),
-          Math.round(activity.average_temp).toString(),
-          Math.round(activity.average_temp - 3).toString()
-        ],
-        [0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.85, 0.8, 0.75, 0.7, 0.75, 0.8, 0.85, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65]
-      )}
-    </View>
-  );
-});
+        {/* Temperature Chart */}
+        {activity.average_temp &&
+          renderChart(
+            'Temperature',
+            <Thermometer size={18} color="#f97316" />,
+            Math.round(activity.average_temp).toString(),
+            '°C',
+            '#f97316',
+            [
+              Math.round(activity.average_temp + 5).toString(),
+              Math.round(activity.average_temp + 2).toString(),
+              Math.round(activity.average_temp).toString(),
+              Math.round(activity.average_temp - 3).toString(),
+            ],
+            [
+              0.4, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.85, 0.8, 0.75, 0.7, 0.75,
+              0.8, 0.85, 0.9, 0.85, 0.8, 0.75, 0.7, 0.65,
+            ],
+          )}
+      </View>
+    );
+  },
+);
 
 ActivityCharts.displayName = 'ActivityCharts';
 
