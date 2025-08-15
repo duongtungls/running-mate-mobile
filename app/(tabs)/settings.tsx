@@ -197,7 +197,8 @@ export default function SettingsScreen() {
                       style: 'destructive',
                       onPress: () => {
                         // Handle logout logic here
-                        console.log('Logout pressed');
+                        // Logout pressed
+                        router.replace('/(auth)/login');
                       },
                     },
                   ],

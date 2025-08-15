@@ -6,7 +6,12 @@ import GradientBackground from '@/components/GradientBackground';
 import { COLORS, SPACING, FONT_SIZES } from '@/constants';
 import { formatDistance, formatDuration } from '@/utils';
 import { MobileUser } from '@/types';
-import { Activity } from '@/shared/types';
+
+interface Activity {
+  name: string;
+  distance: number;
+  duration: number;
+}
 
 interface ExampleComponentProps {
   user: MobileUser;

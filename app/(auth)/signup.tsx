@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,19 +25,29 @@ import {
 } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
 import { useI18n } from '../../hooks/useI18n';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface PasswordRequirement {
   label: string;
   check: (password: string) => boolean;
 }
 
-const passwordRequirements: PasswordRequirement[] = [
-  { label: 'At least 8 characters', check: (p) => p.length >= 8 },
-  { label: 'One uppercase letter', check: (p) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter', check: (p) => /[a-z]/.test(p) },
-  { label: 'One number', check: (p) => /\d/.test(p) },
+const getPasswordRequirements = (t: any): PasswordRequirement[] => [
   {
-    label: 'One special character',
+    label: t('auth.signup.requirements.minLength'),
+    check: (p) => p.length >= 8,
+  },
+  {
+    label: t('auth.signup.requirements.uppercase'),
+    check: (p) => /[A-Z]/.test(p),
+  },
+  {
+    label: t('auth.signup.requirements.lowercase'),
+    check: (p) => /[a-z]/.test(p),
+  },
+  { label: t('auth.signup.requirements.number'), check: (p) => /\d/.test(p) },
+  {
+    label: t('auth.signup.requirements.special'),
     check: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p),
   },
 ];
@@ -45,6 +55,18 @@ const passwordRequirements: PasswordRequirement[] = [
 export default function SignupScreen() {
   const router = useRouter();
   const { t } = useI18n();
+  const {
+    signUp,
+    signInWithGoogle,
+    signInWithApple,
+    isAppleAuthAvailable,
+    loading: authLoading,
+  } = useAuth();
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
+
+  useEffect(() => {
+    isAppleAuthAvailable().then(setAppleAuthAvailable);
+  }, []);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -73,36 +95,36 @@ export default function SignupScreen() {
     };
 
     if (!name.trim()) {
-      newErrors.name = 'Full name is required';
+      newErrors.name = t('auth.validation.nameRequired');
     } else if (name.trim().length < 2) {
-      newErrors.name = 'Name must be at least 2 characters';
+      newErrors.name = t('auth.validation.nameTooShort');
     }
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.validation.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email';
+      newErrors.email = t('auth.validation.emailInvalid');
     }
 
     if (!password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('auth.validation.passwordRequired');
     } else {
-      const failedRequirements = passwordRequirements.filter(
+      const failedRequirements = getPasswordRequirements(t).filter(
         (req) => !req.check(password),
       );
       if (failedRequirements.length > 0) {
-        newErrors.password = 'Password does not meet all requirements';
+        newErrors.password = t('auth.validation.passwordRequirements');
       }
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('auth.validation.confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.validation.passwordsDoNotMatch');
     }
 
     if (!acceptedTerms) {
-      newErrors.terms = 'You must accept the terms and conditions';
+      newErrors.terms = t('auth.validation.termsRequired');
     }
 
     setErrors(newErrors);
@@ -116,42 +138,106 @@ export default function SignupScreen() {
     setErrors((prev) => ({ ...prev, general: '' }));
 
     try {
-      // TODO: Implement actual signup logic with your auth service
-      // Example: await signUp(name, email, password);
+      const { error } = await signUp(email, password, {
+        full_name: name,
+      });
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      Alert.alert(
-        'Account Created!',
-        'Please check your email to verify your account.',
-        [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/login'),
-          },
-        ],
-      );
-    } catch {
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || t('auth.signup.failedToCreate'),
+        }));
+      } else {
+        Alert.alert(
+          t('auth.signup.accountCreated'),
+          t('auth.signup.checkEmailMessage'),
+          [
+            {
+              text: t('common.ok'),
+              onPress: () => router.replace('/login'),
+            },
+          ],
+        );
+      }
+    } catch (error: any) {
       setErrors((prev) => ({
         ...prev,
-        general: 'Failed to create account. Please try again.',
+        general: error.message || t('auth.signup.failedToCreate'),
       }));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleGoogleSignup = async () => {
+    setErrors((prev) => ({ ...prev, general: '' }));
+
+    try {
+      const { error } = await signInWithGoogle();
+
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || 'Google sign-up failed',
+        }));
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (error: any) {
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || 'Google sign-up failed',
+      }));
+    }
+  };
+
+  const handleAppleSignup = async () => {
+    setErrors((prev) => ({ ...prev, general: '' }));
+
+    try {
+      const { error } = await signInWithApple();
+
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || 'Apple sign-up failed',
+        }));
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (error: any) {
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || 'Apple sign-up failed',
+      }));
+    }
+  };
+
   const getPasswordStrength = () => {
-    const passedRequirements = passwordRequirements.filter((req) =>
+    const passedRequirements = getPasswordRequirements(t).filter((req) =>
       req.check(password),
     );
     const strength = passedRequirements.length;
 
-    if (strength < 2) return { label: 'Weak', color: '#ef4444' };
-    if (strength < 4) return { label: 'Medium', color: '#f59e0b' };
-    if (strength < 5) return { label: 'Strong', color: '#10b981' };
-    return { label: 'Very Strong', color: '#10b981' };
+    if (strength < 2)
+      return {
+        label: t('auth.signup.passwordStrength.weak'),
+        color: '#ef4444',
+      };
+    if (strength < 4)
+      return {
+        label: t('auth.signup.passwordStrength.medium'),
+        color: '#f59e0b',
+      };
+    if (strength < 5)
+      return {
+        label: t('auth.signup.passwordStrength.strong'),
+        color: '#10b981',
+      };
+    return {
+      label: t('auth.signup.passwordStrength.veryStrong'),
+      color: '#10b981',
+    };
   };
 
   const passwordStrength = password ? getPasswordStrength() : null;
@@ -189,7 +275,7 @@ export default function SignupScreen() {
               <User size={20} color="rgba(255, 255, 255, 0.6)" />
               <TextInput
                 style={styles.input}
-                placeholder="Full Name"
+                placeholder={t('auth.fullName')}
                 placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 value={name}
                 onChangeText={(text) => {
@@ -210,7 +296,7 @@ export default function SignupScreen() {
               <Mail size={20} color="rgba(255, 255, 255, 0.6)" />
               <TextInput
                 style={styles.input}
-                placeholder="Email"
+                placeholder={t('auth.email')}
                 placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 value={email}
                 onChangeText={(text) => {
@@ -233,7 +319,7 @@ export default function SignupScreen() {
               <Lock size={20} color="rgba(255, 255, 255, 0.6)" />
               <TextInput
                 style={styles.input}
-                placeholder="Password"
+                placeholder={t('auth.password')}
                 placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 value={password}
                 onChangeText={(text) => {
@@ -267,14 +353,15 @@ export default function SignupScreen() {
                     { color: passwordStrength.color },
                   ]}
                 >
-                  Password Strength: {passwordStrength.label}
+                  {t('auth.signup.passwordStrength.label')}:{' '}
+                  {passwordStrength.label}
                 </Text>
                 <View style={styles.progressBar}>
                   <View
                     style={[
                       styles.progressFill,
                       {
-                        width: `${(passwordRequirements.filter((req) => req.check(password)).length / passwordRequirements.length) * 100}%`,
+                        width: `${(getPasswordRequirements(t).filter((req) => req.check(password)).length / getPasswordRequirements(t).length) * 100}%`,
                         backgroundColor: passwordStrength.color,
                       },
                     ]}
@@ -285,7 +372,7 @@ export default function SignupScreen() {
 
             {password ? (
               <View style={styles.passwordRequirements}>
-                {passwordRequirements.map((requirement, index) => {
+                {getPasswordRequirements(t).map((requirement, index) => {
                   const isValid = requirement.check(password);
                   return (
                     <View key={index} style={styles.requirementRow}>
@@ -320,7 +407,7 @@ export default function SignupScreen() {
               <Lock size={20} color="rgba(255, 255, 255, 0.6)" />
               <TextInput
                 style={styles.input}
-                placeholder="Confirm Password"
+                placeholder={t('auth.confirmPassword')}
                 placeholderTextColor="rgba(255, 255, 255, 0.6)"
                 value={confirmPassword}
                 onChangeText={(text) => {
@@ -369,8 +456,9 @@ export default function SignupScreen() {
               </View>
               <Text style={styles.termsText}>
                 I agree to the{' '}
-                <Text style={styles.termsLink}>Terms of Service</Text> and{' '}
-                <Text style={styles.termsLink}>Privacy Policy</Text>
+                <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text>{' '}
+                and{' '}
+                <Text style={styles.termsLink}>{t('auth.privacyPolicy')}</Text>
               </Text>
             </TouchableOpacity>
             {errors.terms ? (
@@ -386,11 +474,38 @@ export default function SignupScreen() {
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Text style={styles.buttonText}>Create Account</Text>
+                  <Text style={styles.buttonText}>
+                    {t('auth.createAccount')}
+                  </Text>
                   <ArrowRight size={20} color="#fff" />
                 </>
               )}
             </TouchableOpacity>
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>{t('auth.orContinueWith')}</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            <View style={styles.socialButtons}>
+              <TouchableOpacity
+                style={[styles.socialButton, styles.googleButton]}
+                onPress={handleGoogleSignup}
+                disabled={loading || authLoading}
+              >
+                <Text style={styles.socialButtonText}>Google</Text>
+              </TouchableOpacity>
+              {appleAuthAvailable && (
+                <TouchableOpacity
+                  style={[styles.socialButton, styles.appleButton]}
+                  onPress={handleAppleSignup}
+                  disabled={loading || authLoading}
+                >
+                  <Text style={styles.socialButtonText}>Apple</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             <TouchableOpacity
               style={styles.loginLink}
@@ -398,8 +513,8 @@ export default function SignupScreen() {
               disabled={loading}
             >
               <Text style={styles.loginText}>
-                Already have an account?{' '}
-                <Text style={styles.loginTextBold}>Sign In</Text>
+                {t('auth.alreadyHaveAccount')}{' '}
+                <Text style={styles.loginTextBold}>{t('auth.signIn')}</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -608,5 +723,50 @@ const styles = StyleSheet.create({
   loginTextBold: {
     color: '#fff',
     fontFamily: 'Inter-SemiBold',
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  dividerText: {
+    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 14,
+    fontFamily: 'Inter-Regular',
+    marginHorizontal: 16,
+  },
+  socialButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    gap: 12,
+  },
+  socialButton: {
+    flex: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  socialButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontFamily: 'Inter-SemiBold',
+  },
+  googleButton: {
+    backgroundColor: '#db4437',
+    borderColor: '#c23321',
+  },
+  appleButton: {
+    backgroundColor: '#000',
+    borderColor: '#333',
   },
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -20,19 +20,33 @@ import {
 } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
 import { useI18n } from '../../hooks/useI18n';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { t } = useI18n();
+  const {
+    signIn,
+    signInWithGoogle,
+    signInWithApple,
+    isAppleAuthAvailable,
+    loading: authLoading,
+  } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
   const [errors, setErrors] = useState({
     email: '',
     password: '',
     general: '',
   });
+
+  useEffect(() => {
+    // Check if Apple Auth is available
+    isAppleAuthAvailable().then(setAppleAuthAvailable);
+  }, []);
 
   const validateForm = () => {
     const newErrors = { email: '', password: '', general: '' };
@@ -60,28 +74,68 @@ export default function LoginScreen() {
     setErrors({ email: '', password: '', general: '' });
 
     try {
-      // TODO: Implement actual login logic with your auth service
-      // Example: await signIn(email, password);
+      const { error } = await signIn(email, password);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // For demo purposes, simulate success
-      router.replace('/(tabs)');
-    } catch {
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || t('auth.login.invalidCredentials'),
+        }));
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (error: any) {
       setErrors((prev) => ({
         ...prev,
-        general: t('auth.login.invalidCredentials'),
+        general: error.message || t('auth.login.invalidCredentials'),
       }));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: string) => {
-    Alert.alert('Social Login', `${provider} login will be implemented here`, [
-      { text: 'OK' },
-    ]);
+  const handleGoogleLogin = async () => {
+    setErrors({ email: '', password: '', general: '' });
+
+    try {
+      const { error } = await signInWithGoogle();
+
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || 'Google sign-in failed',
+        }));
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (error: any) {
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || 'Google sign-in failed',
+      }));
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    setErrors({ email: '', password: '', general: '' });
+
+    try {
+      const { error } = await signInWithApple();
+
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || 'Apple sign-in failed',
+        }));
+      } else {
+        router.replace('/(tabs)');
+      }
+    } catch (error: any) {
+      setErrors((prev) => ({
+        ...prev,
+        general: error.message || 'Apple sign-in failed',
+      }));
+    }
   };
 
   return (
@@ -149,7 +203,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               onPress={() => setShowPassword(!showPassword)}
               style={styles.eyeButton}
-              disabled={loading}
+              disabled={loading || authLoading}
             >
               {showPassword ? (
                 <EyeOff size={20} color="rgba(255, 255, 255, 0.6)" />
@@ -165,7 +219,7 @@ export default function LoginScreen() {
           <TouchableOpacity
             style={styles.forgotPassword}
             onPress={() => router.push('/forgot-password')}
-            disabled={loading}
+            disabled={loading || authLoading}
           >
             <Text style={styles.forgotPasswordText}>
               {t('auth.forgotPassword')}
@@ -173,11 +227,14 @@ export default function LoginScreen() {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[
+              styles.button,
+              (loading || authLoading) && styles.buttonDisabled,
+            ]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || authLoading}
           >
-            {loading ? (
+            {loading || authLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
@@ -195,27 +252,27 @@ export default function LoginScreen() {
 
           <View style={styles.socialButtons}>
             <TouchableOpacity
-              style={styles.socialButton}
-              onPress={() => handleSocialLogin('Google')}
-              disabled={loading}
+              style={[styles.socialButton, styles.googleButton]}
+              onPress={handleGoogleLogin}
+              disabled={loading || authLoading}
             >
-              <Text style={styles.socialButtonText}>
-                {t('auth.login.google')}
-              </Text>
+              <Text style={styles.socialButtonText}>Google</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.socialButton}
-              onPress={() => handleSocialLogin('Apple')}
-              disabled={loading}
-            >
-              <Text style={styles.socialButtonText}>Apple</Text>
-            </TouchableOpacity>
+            {appleAuthAvailable && (
+              <TouchableOpacity
+                style={[styles.socialButton, styles.appleButton]}
+                onPress={handleAppleLogin}
+                disabled={loading || authLoading}
+              >
+                <Text style={styles.socialButtonText}>Apple</Text>
+              </TouchableOpacity>
+            )}
           </View>
 
           <TouchableOpacity
             style={styles.signupLink}
             onPress={() => router.push('/signup')}
-            disabled={loading}
+            disabled={loading || authLoading}
           >
             <Text style={styles.signupText}>
               {t('auth.dontHaveAccount')}{' '}
@@ -370,6 +427,14 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 14,
     fontFamily: 'Inter-SemiBold',
+  },
+  googleButton: {
+    backgroundColor: '#db4437',
+    borderColor: '#c23321',
+  },
+  appleButton: {
+    backgroundColor: '#000',
+    borderColor: '#333',
   },
   signupLink: {
     alignItems: 'center',

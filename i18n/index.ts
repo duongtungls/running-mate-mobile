@@ -22,7 +22,7 @@ const LANGUAGE_DETECTOR = {
       }
 
       // Fall back to device locale
-      const deviceLocale = Localization.locale;
+      const deviceLocale = Localization.getLocales()[0]?.languageCode || 'en';
       let detectedLang = 'en'; // default
 
       if (deviceLocale.includes('ko')) {
@@ -70,6 +70,12 @@ i18n
     react: {
       useSuspense: false,
     },
+  })
+  .then(() => {
+    // i18n initialized successfully
+  })
+  .catch((error) => {
+    console.error('[i18n] Initialization error:', error);
   });
 
 export default i18n;

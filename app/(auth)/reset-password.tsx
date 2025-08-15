@@ -21,25 +21,38 @@ import {
   X,
 } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
+import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../hooks/useI18n';
 
 interface PasswordRequirement {
   label: string;
   check: (password: string) => boolean;
 }
 
-const passwordRequirements: PasswordRequirement[] = [
-  { label: 'At least 8 characters', check: (p) => p.length >= 8 },
-  { label: 'One uppercase letter', check: (p) => /[A-Z]/.test(p) },
-  { label: 'One lowercase letter', check: (p) => /[a-z]/.test(p) },
-  { label: 'One number', check: (p) => /\d/.test(p) },
+const getPasswordRequirements = (t: any): PasswordRequirement[] => [
   {
-    label: 'One special character',
+    label: t('auth.signup.requirements.minLength'),
+    check: (p) => p.length >= 8,
+  },
+  {
+    label: t('auth.signup.requirements.uppercase'),
+    check: (p) => /[A-Z]/.test(p),
+  },
+  {
+    label: t('auth.signup.requirements.lowercase'),
+    check: (p) => /[a-z]/.test(p),
+  },
+  { label: t('auth.signup.requirements.number'), check: (p) => /\d/.test(p) },
+  {
+    label: t('auth.signup.requirements.special'),
     check: (p) => /[!@#$%^&*(),.?":{}|<>]/.test(p),
   },
 ];
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const { updatePassword } = useAuth();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -58,21 +71,23 @@ export default function ResetPasswordScreen() {
       general: '',
     };
 
+    const passwordRequirements = getPasswordRequirements(t);
+
     if (!password.trim()) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('auth.validation.passwordRequired');
     } else {
       const failedRequirements = passwordRequirements.filter(
         (req) => !req.check(password),
       );
       if (failedRequirements.length > 0) {
-        newErrors.password = 'Password does not meet all requirements';
+        newErrors.password = t('auth.validation.passwordRequirements');
       }
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('auth.validation.confirmPasswordRequired');
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('auth.validation.passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -86,26 +101,29 @@ export default function ResetPasswordScreen() {
     setErrors((prev) => ({ ...prev, general: '' }));
 
     try {
-      // TODO: Implement actual password reset logic
-      // Example: await resetPassword(token, password);
+      const { error } = await updatePassword(password);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      Alert.alert(
-        'Password Reset!',
-        'Your password has been successfully reset. You can now sign in with your new password.',
-        [
-          {
-            text: 'Sign In',
-            onPress: () => router.replace('/login'),
-          },
-        ],
-      );
-    } catch {
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || t('auth.resetPassword.failedToReset'),
+        }));
+      } else {
+        Alert.alert(
+          t('auth.resetPassword.passwordReset'),
+          t('auth.resetPassword.successMessage'),
+          [
+            {
+              text: t('auth.signIn'),
+              onPress: () => router.replace('/login'),
+            },
+          ],
+        );
+      }
+    } catch (error: any) {
       setErrors((prev) => ({
         ...prev,
-        general: 'Failed to reset password. Please try again.',
+        general: error.message || t('auth.resetPassword.failedToReset'),
       }));
     } finally {
       setLoading(false);
@@ -113,15 +131,31 @@ export default function ResetPasswordScreen() {
   };
 
   const getPasswordStrength = () => {
+    const passwordRequirements = getPasswordRequirements(t);
     const passedRequirements = passwordRequirements.filter((req) =>
       req.check(password),
     );
     const strength = passedRequirements.length;
 
-    if (strength < 2) return { label: 'Weak', color: '#ef4444' };
-    if (strength < 4) return { label: 'Medium', color: '#f59e0b' };
-    if (strength < 5) return { label: 'Strong', color: '#10b981' };
-    return { label: 'Very Strong', color: '#10b981' };
+    if (strength < 2)
+      return {
+        label: t('auth.signup.passwordStrength.weak'),
+        color: '#ef4444',
+      };
+    if (strength < 4)
+      return {
+        label: t('auth.signup.passwordStrength.medium'),
+        color: '#f59e0b',
+      };
+    if (strength < 5)
+      return {
+        label: t('auth.signup.passwordStrength.strong'),
+        color: '#10b981',
+      };
+    return {
+      label: t('auth.signup.passwordStrength.veryStrong'),
+      color: '#10b981',
+    };
   };
 
   const passwordStrength = password ? getPasswordStrength() : null;
@@ -143,9 +177,9 @@ export default function ResetPasswordScreen() {
             }}
             style={styles.headerImage}
           />
-          <Text style={styles.title}>Reset Password</Text>
+          <Text style={styles.title}>{t('auth.resetPassword.title')}</Text>
           <Text style={styles.subtitle}>
-            Create a new password for your account
+            {t('auth.resetPassword.subtitle')}
           </Text>
         </View>
 
@@ -161,7 +195,7 @@ export default function ResetPasswordScreen() {
             <Lock size={20} color="rgba(255, 255, 255, 0.6)" />
             <TextInput
               style={styles.input}
-              placeholder="New Password"
+              placeholder={t('auth.newPassword')}
               placeholderTextColor="rgba(255, 255, 255, 0.6)"
               value={password}
               onChangeText={(text) => {
@@ -195,14 +229,15 @@ export default function ResetPasswordScreen() {
                   { color: passwordStrength.color },
                 ]}
               >
-                Password Strength: {passwordStrength.label}
+                {t('auth.signup.passwordStrength.label')}:{' '}
+                {passwordStrength.label}
               </Text>
               <View style={styles.progressBar}>
                 <View
                   style={[
                     styles.progressFill,
                     {
-                      width: `${(passwordRequirements.filter((req) => req.check(password)).length / passwordRequirements.length) * 100}%`,
+                      width: `${(getPasswordRequirements(t).filter((req) => req.check(password)).length / getPasswordRequirements(t).length) * 100}%`,
                       backgroundColor: passwordStrength.color,
                     },
                   ]}
@@ -216,7 +251,7 @@ export default function ResetPasswordScreen() {
               <Text style={styles.requirementsTitle}>
                 Password Requirements:
               </Text>
-              {passwordRequirements.map((requirement, index) => {
+              {getPasswordRequirements(t).map((requirement, index) => {
                 const isValid = requirement.check(password);
                 return (
                   <View key={index} style={styles.requirementRow}>
@@ -251,7 +286,7 @@ export default function ResetPasswordScreen() {
             <Lock size={20} color="rgba(255, 255, 255, 0.6)" />
             <TextInput
               style={styles.input}
-              placeholder="Confirm New Password"
+              placeholder={t('auth.confirmPassword')}
               placeholderTextColor="rgba(255, 255, 255, 0.6)"
               value={confirmPassword}
               onChangeText={(text) => {
@@ -289,7 +324,9 @@ export default function ResetPasswordScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Text style={styles.buttonText}>Reset Password</Text>
+                <Text style={styles.buttonText}>
+                  {t('auth.resetPassword.title')}
+                </Text>
                 <ArrowRight size={20} color="#fff" />
               </>
             )}

@@ -5,6 +5,8 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  RefreshControl,
+  ActivityIndicator,
 } from 'react-native';
 import {
   useFonts,
@@ -12,7 +14,7 @@ import {
   Inter_600SemiBold,
   Inter_700Bold,
 } from '@expo-google-fonts/inter';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { SplashScreen, useRouter } from 'expo-router';
 import {
   Clock,
@@ -25,118 +27,22 @@ import {
 } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
 import { useI18n } from '@/hooks/useI18n';
+import { useActivity } from '@/contexts/ActivityContext';
 
 SplashScreen.preventAutoHideAsync();
 
-type ActivityType = 'run' | 'ride' | 'walk' | 'workout';
-
-interface Activity {
-  id: string;
-  type: ActivityType;
-  title: string;
-  description: string;
-  distance: string;
-  duration: string;
-  pace: string;
-  date: string;
-  location: string;
-  image: string;
-  calories: number;
-  heartRate?: number;
-  elevation?: string;
-  aiAnalysis: string;
-}
-
-const activities: Activity[] = [
-  {
-    id: '1',
-    type: 'run',
-    title: 'Morning Interval Run',
-    description: 'Perfect weather for speed work',
-    distance: '8.2km',
-    duration: '42:15',
-    pace: '5:09/km',
-    date: '2 hours ago',
-    location: 'Golden Gate Park',
-    image:
-      'https://images.pexels.com/photos/2402777/pexels-photo-2402777.jpeg?auto=compress&cs=tinysrgb&w=800',
-    calories: 486,
-    heartRate: 165,
-    elevation: '124m',
-    aiAnalysis:
-      'Excellent pacing consistency! Your heart rate stayed in the optimal zone for 85% of the workout. Consider adding more recovery time between intervals.',
-  },
-  {
-    id: '2',
-    type: 'ride',
-    title: 'Coastal Bike Ride',
-    description: 'Beautiful sunset ride along the coast',
-    distance: '32.4km',
-    duration: '1:18:32',
-    pace: '24.8km/h',
-    date: 'Yesterday',
-    location: 'Pacific Coast Highway',
-    image:
-      'https://images.pexels.com/photos/100582/pexels-photo-100582.jpeg?auto=compress&cs=tinysrgb&w=800',
-    calories: 892,
-    heartRate: 142,
-    elevation: '456m',
-    aiAnalysis:
-      'Strong endurance performance! Your power output was consistent throughout the ride. The coastal headwinds provided excellent resistance training.',
-  },
-  {
-    id: '3',
-    type: 'walk',
-    title: 'Recovery Walk',
-    description: 'Easy recovery day in the neighborhood',
-    distance: '4.1km',
-    duration: '48:20',
-    pace: '11:47/km',
-    date: '2 days ago',
-    location: 'Neighborhood Loop',
-    image:
-      'https://images.pexels.com/photos/1571939/pexels-photo-1571939.jpeg?auto=compress&cs=tinysrgb&w=800',
-    calories: 198,
-    heartRate: 98,
-    aiAnalysis:
-      'Perfect active recovery session. Your heart rate stayed in the ideal recovery zone, promoting muscle repair and reducing inflammation.',
-  },
-  {
-    id: '4',
-    type: 'workout',
-    title: 'HIIT Training',
-    description: 'High-intensity circuit training',
-    distance: '0km',
-    duration: '35:00',
-    pace: 'N/A',
-    date: '3 days ago',
-    location: 'Home Gym',
-    image:
-      'https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=800',
-    calories: 425,
-    heartRate: 178,
-    aiAnalysis:
-      'Intense workout with excellent heart rate variability. Your recovery between sets improved throughout the session, showing good cardiovascular adaptation.',
-  },
-  {
-    id: '5',
-    type: 'run',
-    title: 'Long Sunday Run',
-    description: 'Building endurance for upcoming race',
-    distance: '16.8km',
-    duration: '1:24:12',
-    pace: '5:01/km',
-    date: '4 days ago',
-    location: 'Marina District',
-    image:
-      'https://images.pexels.com/photos/2402777/pexels-photo-2402777.jpeg?auto=compress&cs=tinysrgb&w=800',
-    calories: 1024,
-    heartRate: 152,
-    elevation: '89m',
-    aiAnalysis:
-      'Outstanding endurance run! You maintained negative splits for the final 5km. Your aerobic base is strengthening significantly.',
-  },
-];
+type ActivityType =
+  | 'run'
+  | 'ride'
+  | 'walk'
+  | 'workout'
+  | 'Run'
+  | 'Ride'
+  | 'Walk'
+  | 'Workout'
+  | 'VirtualRun'
+  | 'Hike'
+  | 'Swim';
 
 const getActivityIcon = (type: ActivityType) => {
   switch (type) {
@@ -153,27 +59,42 @@ const getActivityIcon = (type: ActivityType) => {
   }
 };
 
-const getActivityTypeLabel = (
-  type: ActivityType,
-  t: (key: string) => string,
-) => {
-  switch (type) {
+const getActivityTypeLabel = (type: string) => {
+  const activityType = type.toLowerCase();
+  switch (activityType) {
     case 'run':
-      return t('training.easyRun');
+    case 'virtualrun':
+      return 'Run';
     case 'ride':
-      return 'Bike Ride';
+      return 'Ride';
     case 'walk':
       return 'Walk';
+    case 'hike':
+      return 'Hike';
     case 'workout':
-      return t('training.workoutComplete');
+    case 'gym':
+      return 'Workout';
+    case 'swim':
+      return 'Swim';
     default:
-      return 'Activity';
+      return type;
   }
 };
 
 export default function HomeScreen() {
   const router = useRouter();
   const { t } = useI18n();
+  const {
+    recentActivities,
+    weeklyStats,
+    isLoadingRecent,
+    isLoadingWeekly,
+    error,
+    refreshData,
+  } = useActivity();
+
+  const [refreshing, setRefreshing] = useState(false);
+
   const [fontsLoaded, fontError] = useFonts({
     'Inter-Regular': Inter_400Regular,
     'Inter-SemiBold': Inter_600SemiBold,
@@ -186,13 +107,51 @@ export default function HomeScreen() {
     }
   }, [fontsLoaded, fontError]);
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refreshData();
+    } catch (err) {
+      console.error('Error refreshing data:', err);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const formatWeeklyDistance = (meters: number): string => {
+    if (!meters) return '0km';
+    const km = meters / 1000;
+    return `${km.toFixed(1)}km`;
+  };
+
+  const formatAverageDistance = (
+    totalMeters: number,
+    count: number,
+  ): string => {
+    if (!totalMeters || !count) return '0km';
+    const avgMeters = totalMeters / count;
+    const km = avgMeters / 1000;
+    return `${km.toFixed(1)}km`;
+  };
+
   if (!fontsLoaded && !fontError) {
     return null;
   }
 
   return (
     <GradientBackground>
-      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.container}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor="rgba(255, 255, 255, 0.8)"
+            titleColor="rgba(255, 255, 255, 0.8)"
+          />
+        }
+      >
         <View style={styles.header}>
           <Text style={styles.greeting}>{t('home.welcome')}</Text>
           <Text style={styles.subtitle}>{t('home.recentActivities')}</Text>
@@ -200,16 +159,43 @@ export default function HomeScreen() {
 
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>47.2km</Text>
-            <Text style={styles.statLabel}>This Week</Text>
+            {isLoadingWeekly ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.statValue}>
+                  {formatWeeklyDistance(weeklyStats?.totalDistance || 0)}
+                </Text>
+                <Text style={styles.statLabel}>This Week</Text>
+              </>
+            )}
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>5</Text>
-            <Text style={styles.statLabel}>Activities</Text>
+            {isLoadingWeekly ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.statValue}>
+                  {weeklyStats?.totalActivities || 0}
+                </Text>
+                <Text style={styles.statLabel}>Activities</Text>
+              </>
+            )}
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>9.4km</Text>
-            <Text style={styles.statLabel}>Avg/Activity</Text>
+            {isLoadingWeekly ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Text style={styles.statValue}>
+                  {formatAverageDistance(
+                    weeklyStats?.totalDistance || 0,
+                    weeklyStats?.totalActivities || 0,
+                  )}
+                </Text>
+                <Text style={styles.statLabel}>Avg/Activity</Text>
+              </>
+            )}
           </View>
         </View>
 
@@ -222,97 +208,179 @@ export default function HomeScreen() {
             </TouchableOpacity>
           </View>
 
-          {activities.map((activity) => {
-            const { icon: IconComponent, color } = getActivityIcon(
-              activity.type,
-            );
-
-            return (
+          {isLoadingRecent ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#fff" />
+              <Text style={styles.loadingText}>Loading activities...</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>Failed to load activities</Text>
               <TouchableOpacity
-                key={activity.id}
-                style={styles.activityCard}
-                onPress={() => router.push(`/activity/${activity.id}`)}
+                style={styles.retryButton}
+                onPress={handleRefresh}
               >
-                <Image
-                  source={{ uri: activity.image }}
-                  style={styles.activityImage}
-                />
-
-                <View style={styles.activityContent}>
-                  <View style={styles.activityHeader}>
-                    <View style={styles.activityTitleRow}>
-                      <View
-                        style={[
-                          styles.activityIcon,
-                          { backgroundColor: `${color}20` },
-                        ]}
-                      >
-                        <IconComponent size={18} color={color} />
-                      </View>
-                      <View style={styles.activityTitleContainer}>
-                        <Text style={styles.activityTitle}>
-                          {activity.title}
-                        </Text>
-                        <Text style={styles.activityType}>
-                          {getActivityTypeLabel(activity.type, t)}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.activityDate}>{activity.date}</Text>
-                  </View>
-
-                  <Text style={styles.activityDescription}>
-                    {activity.description}
-                  </Text>
-
-                  <View style={styles.activityStats}>
-                    {activity.distance !== '0km' && (
-                      <View style={styles.statItem}>
-                        <MapPin size={14} color="rgba(255, 255, 255, 0.8)" />
-                        <Text style={styles.statText}>{activity.distance}</Text>
-                      </View>
-                    )}
-                    <View style={styles.statItem}>
-                      <Clock size={14} color="rgba(255, 255, 255, 0.8)" />
-                      <Text style={styles.statText}>{activity.duration}</Text>
-                    </View>
-                    {activity.pace !== 'N/A' && (
-                      <View style={styles.statItem}>
-                        <TrendingUp
-                          size={14}
-                          color="rgba(255, 255, 255, 0.8)"
-                        />
-                        <Text style={styles.statText}>{activity.pace}</Text>
-                      </View>
-                    )}
-                    {activity.heartRate && (
-                      <View style={styles.statItem}>
-                        <Heart size={14} color="rgba(255, 255, 255, 0.8)" />
-                        <Text style={styles.statText}>
-                          {activity.heartRate} bpm
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={styles.locationRow}>
-                    <MapPin size={12} color="rgba(255, 255, 255, 0.6)" />
-                    <Text style={styles.locationText}>{activity.location}</Text>
-                  </View>
-
-                  <View style={styles.aiAnalysisContainer}>
-                    <View style={styles.aiAnalysisHeader}>
-                      <Zap size={14} color="#10b981" />
-                      <Text style={styles.aiAnalysisTitle}>AI Analysis</Text>
-                    </View>
-                    <Text style={styles.aiAnalysisText}>
-                      {activity.aiAnalysis}
-                    </Text>
-                  </View>
-                </View>
+                <Text style={styles.retryText}>Retry</Text>
               </TouchableOpacity>
-            );
-          })}
+            </View>
+          ) : recentActivities.length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No activities yet</Text>
+              <Text style={styles.emptySubtext}>
+                Connect your Strava account or start tracking to see activities
+                here!
+              </Text>
+            </View>
+          ) : (
+            recentActivities.map((activity) => {
+              const { icon: IconComponent, color } = getActivityIcon(
+                activity.activity_type.toLowerCase() as ActivityType,
+              );
+
+              const formatDistance = (meters: number): string => {
+                if (!meters) return '0km';
+                const km = meters / 1000;
+                return `${km.toFixed(1)}km`;
+              };
+
+              const formatDuration = (seconds: number): string => {
+                if (!seconds) return '0:00';
+                const hours = Math.floor(seconds / 3600);
+                const minutes = Math.floor((seconds % 3600) / 60);
+                const remainingSeconds = seconds % 60;
+
+                if (hours > 0) {
+                  return `${hours}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+                }
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+              };
+
+              const formatPace = (meters: number, seconds: number): string => {
+                if (!meters || !seconds) return 'N/A';
+                const km = meters / 1000;
+                const paceSeconds = seconds / km;
+                const minutes = Math.floor(paceSeconds / 60);
+                const remainingSeconds = Math.floor(paceSeconds % 60);
+                return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}/km`;
+              };
+
+              const formatRelativeDate = (dateString: string): string => {
+                const date = new Date(dateString);
+                const now = new Date();
+                const diffInHours = Math.floor(
+                  (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+                );
+
+                if (diffInHours < 1) return 'Just now';
+                if (diffInHours < 24) return `${diffInHours} hours ago`;
+                if (diffInHours < 48) return 'Yesterday';
+                if (diffInHours < 168)
+                  return `${Math.floor(diffInHours / 24)} days ago`;
+
+                return date.toLocaleDateString();
+              };
+
+              const formatLocation = (
+                city?: string,
+                state?: string,
+                country?: string,
+              ): string => {
+                if (city && state) return `${city}, ${state}`;
+                if (city) return city;
+                if (state) return state;
+                if (country) return country;
+                return 'Unknown Location';
+              };
+
+              return (
+                <TouchableOpacity
+                  key={activity.id}
+                  style={styles.activityCard}
+                  onPress={() => router.push(`/activity/${activity.id}`)}
+                >
+                  <View style={styles.activityContent}>
+                    <View style={styles.activityHeader}>
+                      <View style={styles.activityTitleRow}>
+                        <View
+                          style={[
+                            styles.activityIcon,
+                            { backgroundColor: `${color}20` },
+                          ]}
+                        >
+                          <IconComponent size={18} color={color} />
+                        </View>
+                        <View style={styles.activityTitleContainer}>
+                          <Text style={styles.activityTitle}>
+                            {activity.name}
+                          </Text>
+                          <Text style={styles.activityType}>
+                            {getActivityTypeLabel(activity.activity_type)}
+                          </Text>
+                        </View>
+                      </View>
+                      <Text style={styles.activityDate}>
+                        {formatRelativeDate(activity.start_date_local)}
+                      </Text>
+                    </View>
+
+                    <View style={styles.activityStats}>
+                      {activity.distance && activity.distance > 0 && (
+                        <View style={styles.statItem}>
+                          <MapPin size={14} color="rgba(255, 255, 255, 0.8)" />
+                          <Text style={styles.statText}>
+                            {formatDistance(activity.distance)}
+                          </Text>
+                        </View>
+                      )}
+                      {activity.moving_time && (
+                        <View style={styles.statItem}>
+                          <Clock size={14} color="rgba(255, 255, 255, 0.8)" />
+                          <Text style={styles.statText}>
+                            {formatDuration(activity.moving_time)}
+                          </Text>
+                        </View>
+                      )}
+                      {activity.distance &&
+                        activity.moving_time &&
+                        activity.distance > 0 && (
+                          <View style={styles.statItem}>
+                            <TrendingUp
+                              size={14}
+                              color="rgba(255, 255, 255, 0.8)"
+                            />
+                            <Text style={styles.statText}>
+                              {formatPace(
+                                activity.distance,
+                                activity.moving_time,
+                              )}
+                            </Text>
+                          </View>
+                        )}
+                      {activity.average_heartrate && (
+                        <View style={styles.statItem}>
+                          <Heart size={14} color="rgba(255, 255, 255, 0.8)" />
+                          <Text style={styles.statText}>
+                            {Math.round(activity.average_heartrate)} bpm
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={styles.locationRow}>
+                      <MapPin size={12} color="rgba(255, 255, 255, 0.6)" />
+                      <Text style={styles.locationText}>
+                        {formatLocation(
+                          activity.location_city,
+                          activity.location_state,
+                          activity.location_country,
+                        )}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
 
         <View style={styles.bottomSpacing} />
@@ -399,10 +467,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
-  activityImage: {
-    width: '100%',
-    height: 120,
-  },
   activityContent: {
     padding: 16,
   },
@@ -478,31 +542,58 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: 'rgba(255, 255, 255, 0.6)',
   },
-  aiAnalysisContainer: {
-    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-    borderRadius: 8,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#10b981',
-  },
-  aiAnalysisHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  aiAnalysisTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 12,
-    color: '#10b981',
-  },
-  aiAnalysisText: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.9)',
-    lineHeight: 18,
-  },
   bottomSpacing: {
     height: 20,
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 10,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: '#ef4444',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  retryText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 14,
+    color: '#fff',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.6)',
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });

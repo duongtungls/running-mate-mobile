@@ -31,5 +31,5 @@ export interface TabBarIconProps {
   size: number;
 }
 
-// Re-export shared types with alias
-export * from '@/shared/types';
+// Profile types
+export * from './profile';

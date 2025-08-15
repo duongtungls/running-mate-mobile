@@ -12,9 +12,13 @@ import {
 import { useRouter } from 'expo-router';
 import { ArrowLeft, ArrowRight, Mail, AlertCircle } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
+import { useAuth } from '../../contexts/AuthContext';
+import { useI18n } from '../../hooks/useI18n';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const { t } = useI18n();
+  const { resetPassword } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: '', general: '' });
@@ -24,9 +28,9 @@ export default function ForgotPasswordScreen() {
     const newErrors = { email: '', general: '' };
 
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('auth.validation.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = t('auth.validation.emailInvalid');
     }
 
     setErrors(newErrors);
@@ -40,17 +44,20 @@ export default function ForgotPasswordScreen() {
     setErrors({ email: '', general: '' });
 
     try {
-      // TODO: Implement actual password reset logic
-      // Example: await sendPasswordResetEmail(email);
+      const { error } = await resetPassword(email);
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      setEmailSent(true);
-    } catch {
+      if (error) {
+        setErrors((prev) => ({
+          ...prev,
+          general: error.message || t('auth.forgotPassword.sendError'),
+        }));
+      } else {
+        setEmailSent(true);
+      }
+    } catch (error: any) {
       setErrors((prev) => ({
         ...prev,
-        general: 'Failed to send reset email. Please try again.',
+        general: error.message || t('auth.forgotPassword.sendError'),
       }));
     } finally {
       setLoading(false);
@@ -61,18 +68,27 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      // TODO: Implement resend logic
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const { error } = await resetPassword(email);
 
+      if (error) {
+        Alert.alert(
+          t('common.error'),
+          error.message || t('auth.forgotPassword.resendError'),
+          [{ text: t('common.ok') }],
+        );
+      } else {
+        Alert.alert(
+          t('auth.forgotPassword.emailSent'),
+          t('auth.forgotPassword.resendSuccess'),
+          [{ text: t('common.ok') }],
+        );
+      }
+    } catch (error: any) {
       Alert.alert(
-        'Email Sent!',
-        'We&apos;ve sent another password reset email to your inbox.',
-        [{ text: 'OK' }],
+        t('common.error'),
+        error.message || t('auth.forgotPassword.resendError'),
+        [{ text: t('common.ok') }],
       );
-    } catch {
-      Alert.alert('Error', 'Failed to resend email. Please try again.', [
-        { text: 'OK' },
-      ]);
     } finally {
       setLoading(false);
     }
@@ -94,16 +110,17 @@ export default function ForgotPasswordScreen() {
               <Mail size={64} color="#fff" />
             </View>
 
-            <Text style={styles.successTitle}>Check Your Email</Text>
+            <Text style={styles.successTitle}>
+              {t('auth.forgotPassword.checkEmail')}
+            </Text>
             <Text style={styles.successSubtitle}>
-              We&apos;ve sent password reset instructions to:
+              {t('auth.forgotPassword.sentInstructions')}
             </Text>
 
             <Text style={styles.emailAddress}>{email}</Text>
 
             <Text style={styles.successInstruction}>
-              Click the link in your email to reset your password. If you
-              don&apos;t see it, check your spam folder.
+              {t('auth.forgotPassword.instructions')}
             </Text>
 
             <TouchableOpacity
@@ -115,7 +132,9 @@ export default function ForgotPasswordScreen() {
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
                 <>
-                  <Text style={styles.buttonText}>Resend Email</Text>
+                  <Text style={styles.buttonText}>
+                    {t('auth.forgotPassword.resendEmail')}
+                  </Text>
                   <ArrowRight size={20} color="#fff" />
                 </>
               )}
@@ -126,7 +145,10 @@ export default function ForgotPasswordScreen() {
               onPress={() => router.push('/login')}
             >
               <Text style={styles.backToLoginText}>
-                Back to <Text style={styles.backToLoginTextBold}>Sign In</Text>
+                {t('auth.backTo')}{' '}
+                <Text style={styles.backToLoginTextBold}>
+                  {t('auth.signIn')}
+                </Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -152,10 +174,9 @@ export default function ForgotPasswordScreen() {
             }}
             style={styles.headerImage}
           />
-          <Text style={styles.title}>Forgot Password?</Text>
+          <Text style={styles.title}>{t('auth.forgotPassword.title')}</Text>
           <Text style={styles.subtitle}>
-            Enter your email address and we&apos;ll send you instructions to
-            reset your password
+            {t('auth.forgotPassword.subtitle')}
           </Text>
         </View>
 
@@ -171,7 +192,7 @@ export default function ForgotPasswordScreen() {
             <Mail size={20} color="rgba(255, 255, 255, 0.6)" />
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={t('auth.email')}
               placeholderTextColor="rgba(255, 255, 255, 0.6)"
               value={email}
               onChangeText={(text) => {
@@ -200,7 +221,9 @@ export default function ForgotPasswordScreen() {
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <>
-                <Text style={styles.buttonText}>Send Reset Link</Text>
+                <Text style={styles.buttonText}>
+                  {t('auth.forgotPassword.sendLink')}
+                </Text>
                 <ArrowRight size={20} color="#fff" />
               </>
             )}
@@ -212,8 +235,8 @@ export default function ForgotPasswordScreen() {
             disabled={loading}
           >
             <Text style={styles.loginText}>
-              Remember your password?{' '}
-              <Text style={styles.loginTextBold}>Sign In</Text>
+              {t('auth.forgotPassword.rememberPassword')}{' '}
+              <Text style={styles.loginTextBold}>{t('auth.signIn')}</Text>
             </Text>
           </TouchableOpacity>
         </View>
