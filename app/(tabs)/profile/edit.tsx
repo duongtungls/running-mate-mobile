@@ -27,11 +27,14 @@ import GradientBackground from '../../../components/GradientBackground';
 import { useProfile } from '../../../contexts/ProfileContext';
 import { ProfileUpdateData } from '../../../types/profile';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../../../contexts/AuthContext';
+import { getProfilePictureUri } from '../../../utils/profilePicture';
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { profile, updateProfile, uploadAvatar, profileLoading } = useProfile();
+  const { user } = useAuth();
 
   // Form state
   const [formData, setFormData] = useState({
@@ -210,9 +213,7 @@ export default function EditProfileScreen() {
           <View style={styles.avatarContainer}>
             <Image
               source={{
-                uri:
-                  profile?.avatar_url ||
-                  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&h=400&q=80',
+                uri: getProfilePictureUri({ profile, user }),
               }}
               style={styles.avatar}
             />

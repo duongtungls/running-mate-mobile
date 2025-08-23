@@ -29,6 +29,7 @@ import GradientBackground from '../../../components/GradientBackground';
 import { useAuth } from '../../../contexts/AuthContext';
 import { useProfile } from '../../../contexts/ProfileContext';
 import { NotificationBell } from '../../../components/NotificationBell';
+import { getProfilePictureUri } from '../../../utils/profilePicture';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -154,9 +155,7 @@ export default function ProfileScreen() {
               <View style={styles.avatarContainer}>
                 <Image
                   source={{
-                    uri:
-                      profile?.avatar_url ||
-                      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&h=400&q=80',
+                    uri: getProfilePictureUri({ profile, user }),
                   }}
                   style={styles.avatar}
                 />
