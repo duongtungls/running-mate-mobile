@@ -280,7 +280,7 @@ export default function ProgramDetailScreen() {
 
         {/* Weekly Schedule */}
         <View style={styles.scheduleSection}>
-          <Text style={styles.sectionTitle}>This Week's Schedule</Text>
+          <Text style={styles.sectionTitle}>This Week&apos;s Schedule</Text>
 
           {workouts.map((workout) => (
             <TouchableOpacity

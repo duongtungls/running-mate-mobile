@@ -130,14 +130,14 @@ export default function OnboardingPreferencesScreen() {
               </View>
               <Text style={styles.completionTitle}>Setup Complete!</Text>
               <Text style={styles.completionSubtitle}>
-                We've personalized your experience based on your goals and
+                We&apos;ve personalized your experience based on your goals and
                 preferences.
               </Text>
             </View>
 
             {/* Progress Summary */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What we've set up:</Text>
+              <Text style={styles.sectionTitle}>What we&apos;ve set up:</Text>
               <View style={styles.completedStepsContainer}>
                 {completedSteps.map((step, index) => (
                   <View key={index} style={styles.completedStep}>
@@ -157,7 +157,7 @@ export default function OnboardingPreferencesScreen() {
 
             {/* Next Steps */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What's next?</Text>
+              <Text style={styles.sectionTitle}>What&apos;s next?</Text>
               <View style={styles.nextStepsContainer}>
                 {nextSteps.map((step, index) => (
                   <View key={index} style={styles.nextStepCard}>
@@ -243,7 +243,7 @@ export default function OnboardingPreferencesScreen() {
               <Text style={styles.ctaText}>
                 Ready to start your running journey?
               </Text>
-              <Text style={styles.ctaSubtext}>Let's go running! 🏃‍♂️</Text>
+              <Text style={styles.ctaSubtext}>Let&apos;s go running! 🏃‍♂️</Text>
             </View>
           </View>
 

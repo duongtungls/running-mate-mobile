@@ -142,7 +142,7 @@ export default function OnboardingConnectStravaScreen() {
 
                   {/* Benefits List */}
                   <View style={styles.benefitsSection}>
-                    <Text style={styles.benefitsTitle}>What you'll get:</Text>
+                    <Text style={styles.benefitsTitle}>What you&apos;ll get:</Text>
                     <View style={styles.benefitsList}>
                       {benefits.map((benefit, index) => {
                         const IconComponent = benefit.icon;
@@ -268,7 +268,7 @@ export default function OnboardingConnectStravaScreen() {
                 </View>
                 <Text style={styles.successTitle}>Connected to Strava!</Text>
                 <Text style={styles.successSubtitle}>
-                  Your Strava account has been successfully connected. We'll now
+                  Your Strava account has been successfully connected. We&apos;ll now
                   sync your activities and provide personalized insights.
                 </Text>
 
@@ -283,7 +283,7 @@ export default function OnboardingConnectStravaScreen() {
                   </View>
 
                   <View style={styles.successCard}>
-                    <Text style={styles.successCardTitle}>What's Next</Text>
+                    <Text style={styles.successCardTitle}>What&apos;s Next</Text>
                     <Text style={styles.successCardText}>
                       Complete your setup and start your personalized training
                       plan

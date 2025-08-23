@@ -111,7 +111,7 @@ export default function NotificationsScreen() {
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No notifications yet</Text>
               <Text style={styles.emptySubtext}>
-                We'll notify you about training plans, achievements, and more
+                We&apos;ll notify you about training plans, achievements, and more
               </Text>
             </View>
           ) : (

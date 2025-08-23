@@ -164,9 +164,9 @@ export default function OnboardingWelcomeScreen() {
 
             {/* Goal Selection */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What's your main goal?</Text>
+              <Text style={styles.sectionTitle}>What&apos;s your main goal?</Text>
               <Text style={styles.sectionSubtitle}>
-                Choose what you'd like to achieve first. You can always change
+                Choose what you&apos;d like to achieve first. You can always change
                 this later.
               </Text>
 
@@ -188,7 +188,7 @@ export default function OnboardingWelcomeScreen() {
 
             {/* Features */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What you'll get:</Text>
+              <Text style={styles.sectionTitle}>What you&apos;ll get:</Text>
               <View style={styles.featuresList}>
                 <View style={styles.featureItem}>
                   <CheckCircle size={16} color="#22c55e" />
@@ -217,7 +217,7 @@ export default function OnboardingWelcomeScreen() {
 
             {/* Next Steps Preview */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What's next?</Text>
+              <Text style={styles.sectionTitle}>What&apos;s next?</Text>
               <View style={styles.nextStepsContainer}>
                 {nextSteps.map((step, index) => (
                   <View key={index} style={styles.nextStepCard}>

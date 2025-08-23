@@ -147,7 +147,7 @@ export default function OnboardingGoalsScreen() {
               <View style={styles.sectionHeader}>
                 <Target size={20} color="rgba(255, 255, 255, 0.8)" />
                 <Text style={styles.sectionTitle}>
-                  What's your main running goal? *
+                  What&apos;s your main running goal? *
                 </Text>
               </View>
 
@@ -243,7 +243,7 @@ export default function OnboardingGoalsScreen() {
                 </Text>
               </View>
               <Text style={styles.sectionSubtitle}>
-                Select all times that work for your schedule. We'll create
+                Select all times that work for your schedule. We&apos;ll create
                 workouts around your availability.
               </Text>
 

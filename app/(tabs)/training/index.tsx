@@ -119,7 +119,7 @@ export default function TrainingScreen() {
 
         {currentPlan && (
           <View style={styles.workouts}>
-            <Text style={styles.sectionTitle}>This Week's Workouts</Text>
+            <Text style={styles.sectionTitle}>This Week&apos;s Workouts</Text>
 
             {getCurrentWeekWorkouts().map((workout, index) => {
               const dayNames = [
