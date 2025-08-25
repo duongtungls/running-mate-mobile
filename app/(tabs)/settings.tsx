@@ -27,14 +27,73 @@ import { useRouter } from 'expo-router';
 import GradientBackground from '../../components/GradientBackground';
 import { useI18n } from '@/hooks/useI18n';
 import LanguageSelector from '@/components/LanguageSelector';
+import { useTheme } from '@/contexts/ThemeContext';
+import { createRgbaColor, opacity } from '@/constants/designTokens';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, getCurrentLanguage, getLanguageDisplayName } = useI18n();
+  const { mode, isDark, toggleTheme, theme } = useTheme();
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [vibration, setVibration] = useState(true);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
+
+  const getThemeSubtitle = () => {
+    switch (mode) {
+      case 'light':
+        return 'Always light theme';
+      case 'dark':
+        return 'Always dark theme';
+      case 'system':
+        return `System (${isDark ? 'dark' : 'light'})`;
+      default:
+        return 'Follow system setting';
+    }
+  };
+
+  // Create theme-aware styles
+  const dynamicStyles = {
+    title: {
+      ...styles.title,
+      color: theme.foreground,
+    },
+    subtitle: {
+      ...styles.subtitle,
+      color: createRgbaColor(theme.foreground, opacity[7]),
+    },
+    sectionTitle: {
+      ...styles.sectionTitle,
+      color: theme.foreground,
+    },
+    sectionContent: {
+      ...styles.sectionContent,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+    },
+    settingItem: {
+      ...styles.settingItem,
+      borderBottomColor: createRgbaColor(theme.foreground, opacity[1]),
+    },
+    settingTitle: {
+      ...styles.settingTitle,
+      color: theme.foreground,
+    },
+    settingSubtitle: {
+      ...styles.settingSubtitle,
+      color: createRgbaColor(theme.foreground, opacity[6]),
+    },
+    modalContent: {
+      ...styles.modalContent,
+      backgroundColor: theme.card,
+    },
+    modalTitle: {
+      ...styles.modalTitle,
+      color: theme.cardForeground,
+    },
+    closeButton: {
+      ...styles.closeButton,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+    },
+  };
 
   const SettingItem = ({
     icon: Icon,
@@ -124,10 +183,10 @@ export default function SettingsScreen() {
             <SettingItem
               icon={Moon}
               title={t('settings.theme')}
-              subtitle="Toggle dark mode"
+              subtitle={getThemeSubtitle()}
               showToggle={true}
-              toggleValue={darkMode}
-              onToggle={setDarkMode}
+              toggleValue={isDark}
+              onToggle={toggleTheme}
               showChevron={false}
               color="#8b5cf6"
             />
@@ -226,6 +285,7 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               </View>
               <LanguageSelector
+                showAsModal={false}
                 onLanguageSelect={() => setShowLanguageModal(false)}
               />
             </View>

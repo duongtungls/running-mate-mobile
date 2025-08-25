@@ -26,6 +26,7 @@ import {
   ChevronRight,
 } from 'lucide-react-native';
 import GradientBackground from '../../components/GradientBackground';
+import { NotificationBell } from '../../components/NotificationBell';
 import { useI18n } from '@/hooks/useI18n';
 import { useActivity } from '@/contexts/ActivityContext';
 
@@ -153,8 +154,13 @@ export default function HomeScreen() {
         }
       >
         <View style={styles.header}>
-          <Text style={styles.greeting}>{t('home.welcome')}</Text>
-          <Text style={styles.subtitle}>{t('home.recentActivities')}</Text>
+          <View style={styles.headerContent}>
+            <View>
+              <Text style={styles.greeting}>{t('home.welcome')}</Text>
+              <Text style={styles.subtitle}>{t('home.recentActivities')}</Text>
+            </View>
+            <NotificationBell onPress={() => router.push('/notifications')} />
+          </View>
         </View>
 
         <View style={styles.statsContainer}>
@@ -396,6 +402,11 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 60,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   greeting: {
     fontFamily: 'Inter-Bold',

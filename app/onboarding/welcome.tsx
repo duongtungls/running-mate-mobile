@@ -164,10 +164,12 @@ export default function OnboardingWelcomeScreen() {
 
             {/* Goal Selection */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>What&apos;s your main goal?</Text>
+              <Text style={styles.sectionTitle}>
+                What&apos;s your main goal?
+              </Text>
               <Text style={styles.sectionSubtitle}>
-                Choose what you&apos;d like to achieve first. You can always change
-                this later.
+                Choose what you&apos;d like to achieve first. You can always
+                change this later.
               </Text>
 
               <View style={styles.goalsContainer}>

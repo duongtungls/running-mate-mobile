@@ -30,11 +30,14 @@ import { useAuth } from '../../../contexts/AuthContext';
 import { useProfile } from '../../../contexts/ProfileContext';
 import { NotificationBell } from '../../../components/NotificationBell';
 import { getProfilePictureUri } from '../../../utils/profilePicture';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { createRgbaColor, opacity } from '../../../constants/designTokens';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { t } = useI18n();
   const { user, signOut, loading: authLoading } = useAuth();
+  const { theme } = useTheme();
   const {
     profile,
     stats,
@@ -117,6 +120,109 @@ export default function ProfileScreen() {
 
   const loading = profileLoading || statsLoading || achievementsLoading;
 
+  // Create theme-aware styles
+  const dynamicStyles = {
+    screenTitle: {
+      ...styles.screenTitle,
+      color: theme.foreground,
+    },
+    signOutButton: {
+      ...styles.signOutButton,
+      backgroundColor: createRgbaColor(theme.destructive, opacity[2]),
+    },
+    avatar: {
+      ...styles.avatar,
+      borderColor: createRgbaColor(theme.foreground, opacity[3]),
+    },
+    editButton: {
+      ...styles.editButton,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[2]),
+      borderColor: createRgbaColor(theme.foreground, opacity[3]),
+    },
+    name: {
+      ...styles.name,
+      color: theme.foreground,
+    },
+    handle: {
+      ...styles.handle,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    bio: {
+      ...styles.bio,
+      color: theme.foreground,
+    },
+    location: {
+      ...styles.location,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    joinDate: {
+      ...styles.joinDate,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    email: {
+      ...styles.email,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    statCard: {
+      ...styles.statCard,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+      borderColor: createRgbaColor(theme.foreground, opacity[2]),
+    },
+    statValue: {
+      ...styles.statValue,
+      color: theme.foreground,
+    },
+    statLabel: {
+      ...styles.statLabel,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    sectionTitle: {
+      ...styles.sectionTitle,
+      color: theme.foreground,
+    },
+    achievementTitle: {
+      ...styles.achievementTitle,
+      color: theme.foreground,
+    },
+    achievementSubtitle: {
+      ...styles.achievementSubtitle,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    noAchievements: {
+      ...styles.noAchievements,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+    },
+    noAchievementsText: {
+      ...styles.noAchievementsText,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    recordItem: {
+      ...styles.recordItem,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+    },
+    recordLabel: {
+      ...styles.recordLabel,
+      color: createRgbaColor(theme.foreground, opacity[8]),
+    },
+    recordValue: {
+      ...styles.recordValue,
+      color: theme.foreground,
+    },
+    settingsButton: {
+      ...styles.settingsButton,
+      backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+      borderColor: createRgbaColor(theme.foreground, opacity[2]),
+    },
+    settingsText: {
+      ...styles.settingsText,
+      color: theme.foreground,
+    },
+    loadingText: {
+      ...styles.loadingText,
+      color: theme.foreground,
+    },
+  };
+
   return (
     <GradientBackground>
       <ScrollView
@@ -131,11 +237,13 @@ export default function ProfileScreen() {
       >
         {/* Top Navigation */}
         <View style={styles.topNav}>
-          <Text style={styles.screenTitle}>{t('navigation.profile')}</Text>
+          <Text style={dynamicStyles.screenTitle}>
+            {t('navigation.profile')}
+          </Text>
           <View style={styles.topActions}>
             <NotificationBell onPress={() => router.push('/notifications')} />
             <TouchableOpacity
-              style={styles.signOutButton}
+              style={dynamicStyles.signOutButton}
               onPress={handleSignOut}
               disabled={authLoading}
             >
@@ -157,7 +265,7 @@ export default function ProfileScreen() {
                   source={{
                     uri: getProfilePictureUri({ profile, user }),
                   }}
-                  style={styles.avatar}
+                  style={dynamicStyles.avatar}
                 />
                 <TouchableOpacity
                   style={styles.editButton}
@@ -166,23 +274,27 @@ export default function ProfileScreen() {
                   <Edit3 size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
-              <Text style={styles.name}>{getDisplayName()}</Text>
-              <Text style={styles.handle}>{getDisplayEmail()}</Text>
+              <Text style={dynamicStyles.name}>{getDisplayName()}</Text>
+              <Text style={dynamicStyles.handle}>{getDisplayEmail()}</Text>
 
               <View style={styles.bioContainer}>
-                {profile?.bio && <Text style={styles.bio}>{profile.bio}</Text>}
+                {profile?.bio && (
+                  <Text style={dynamicStyles.bio}>{profile.bio}</Text>
+                )}
 
                 {profile?.location && (
                   <View style={styles.locationContainer}>
                     <MapPin size={16} color="rgba(255, 255, 255, 0.8)" />
-                    <Text style={styles.location}>{profile.location}</Text>
+                    <Text style={dynamicStyles.location}>
+                      {profile.location}
+                    </Text>
                   </View>
                 )}
 
                 {profile?.created_at && (
                   <View style={styles.joinDateContainer}>
                     <Calendar size={16} color="rgba(255, 255, 255, 0.8)" />
-                    <Text style={styles.joinDate}>
+                    <Text style={dynamicStyles.joinDate}>
                       Joined {formatDate(profile.created_at)}
                     </Text>
                   </View>
@@ -190,38 +302,38 @@ export default function ProfileScreen() {
 
                 <View style={styles.emailContainer}>
                   <Mail size={16} color="rgba(255, 255, 255, 0.8)" />
-                  <Text style={styles.email}>{getDisplayEmail()}</Text>
+                  <Text style={dynamicStyles.email}>{getDisplayEmail()}</Text>
                 </View>
               </View>
             </View>
 
             {/* Year-to-Date Stats (Primary) */}
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>This Year</Text>
+              <Text style={dynamicStyles.sectionTitle}>This Year</Text>
             </View>
             <View style={styles.statsContainer}>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>
                   {stats?.ytd_runs || stats?.total_runs || 0}
                 </Text>
-                <Text style={styles.statLabel}>Runs</Text>
+                <Text style={dynamicStyles.statLabel}>Runs</Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>
                   {formatDistance(
                     stats?.ytd_distance || stats?.total_distance,
                     profile?.preferred_units,
                   )}
                 </Text>
-                <Text style={styles.statLabel}>
+                <Text style={dynamicStyles.statLabel}>
                   {profile?.preferred_units === 'imperial' ? 'mi' : 'km'}
                 </Text>
               </View>
-              <View style={styles.statCard}>
-                <Text style={styles.statValue}>
+              <View style={dynamicStyles.statCard}>
+                <Text style={dynamicStyles.statValue}>
                   {formatDuration(stats?.ytd_moving_time || stats?.total_time)}
                 </Text>
-                <Text style={styles.statLabel}>Time</Text>
+                <Text style={dynamicStyles.statLabel}>Time</Text>
               </View>
             </View>
 

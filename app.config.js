@@ -8,7 +8,7 @@ export default {
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'runningmate',
-    userInterfaceStyle: 'light',
+    userInterfaceStyle: 'automatic',
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.runningmate.app',

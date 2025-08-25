@@ -7,6 +7,7 @@ import { TrainingProvider } from '@/contexts/TrainingContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { ProfileProvider } from '@/contexts/ProfileContext';
 import { ActivityProvider } from '@/contexts/ActivityContext';
+import { ThemeProvider } from '@/contexts/ThemeContext';
 import '@/i18n'; // Initialize i18n
 
 export default function RootLayout() {
@@ -36,23 +37,26 @@ export default function RootLayout() {
 
   try {
     return (
-      <AuthProvider>
-        <ProfileProvider>
-          <ActivityProvider>
-            <NotificationProvider>
-              <TrainingProvider>
-                <Stack screenOptions={{ headerShown: false }}>
-                  <Stack.Screen name="index" />
-                  <Stack.Screen name="(auth)" />
-                  <Stack.Screen name="(tabs)" />
-                  <Stack.Screen name="+not-found" />
-                </Stack>
-                <StatusBar style="light" />
-              </TrainingProvider>
-            </NotificationProvider>
-          </ActivityProvider>
-        </ProfileProvider>
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ProfileProvider>
+            <ActivityProvider>
+              <NotificationProvider>
+                <TrainingProvider>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="index" />
+                    <Stack.Screen name="(auth)" />
+                    <Stack.Screen name="(tabs)" />
+                    <Stack.Screen name="notifications" />
+                    <Stack.Screen name="+not-found" />
+                  </Stack>
+                  <StatusBar style="auto" />
+                </TrainingProvider>
+              </NotificationProvider>
+            </ActivityProvider>
+          </ProfileProvider>
+        </AuthProvider>
+      </ThemeProvider>
     );
   } catch (err) {
     console.error('[RootLayout] Error in render:', err);

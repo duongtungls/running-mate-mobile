@@ -31,7 +31,7 @@ interface OnboardingSlide {
   subtitle: string;
   description: string;
   image: string;
-  icon: React.ComponentType<any>; // eslint-disable-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<any>;  
   color: string;
   route?: string; // Reference to actual onboarding pages
 }

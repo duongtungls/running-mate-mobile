@@ -24,6 +24,9 @@ export interface Workout {
   intensity: number; // 1-10 scale
   day_of_week: number; // 0-6 (Sunday = 0)
   week_number: number;
+  completed?: boolean;
+  completed_at?: string;
+  notes?: string;
 }
 
 interface TrainingContextType {
@@ -38,6 +41,11 @@ interface TrainingContextType {
   getTrainingPlan: (id: string) => Promise<TrainingPlan | null>;
   setCurrentPlan: (plan: TrainingPlan | null) => void;
   refreshPlans: () => Promise<void>;
+  completeWorkout: (workoutId: string, notes?: string) => Promise<void>;
+  updateWorkout: (
+    workoutId: string,
+    updates: Partial<Workout>,
+  ) => Promise<void>;
 }
 
 const TrainingContext = createContext<TrainingContextType | undefined>(
@@ -126,6 +134,93 @@ export const TrainingProvider: React.FC<TrainingProviderProps> = ({
     await getTrainingPlans();
   };
 
+  const completeWorkout = async (workoutId: string, notes?: string) => {
+    if (!user) return;
+
+    try {
+      await apiService.completeWorkout(workoutId, notes);
+
+      // Update local state
+      setTrainingPlans((prev) =>
+        prev.map((plan) => ({
+          ...plan,
+          workouts: plan.workouts.map((workout) =>
+            workout.id === workoutId
+              ? {
+                  ...workout,
+                  completed: true,
+                  completed_at: new Date().toISOString(),
+                  notes: notes || workout.notes,
+                }
+              : workout,
+          ),
+        })),
+      );
+
+      // Update current plan if it contains this workout
+      if (currentPlan) {
+        setCurrentPlan((prev) =>
+          prev
+            ? {
+                ...prev,
+                workouts: prev.workouts.map((workout) =>
+                  workout.id === workoutId
+                    ? {
+                        ...workout,
+                        completed: true,
+                        completed_at: new Date().toISOString(),
+                        notes: notes || workout.notes,
+                      }
+                    : workout,
+                ),
+              }
+            : null,
+        );
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to complete workout');
+    }
+  };
+
+  const updateWorkout = async (
+    workoutId: string,
+    updates: Partial<Workout>,
+  ) => {
+    if (!user) return;
+
+    try {
+      await apiService.updateWorkout(workoutId, updates);
+
+      // Update local state
+      setTrainingPlans((prev) =>
+        prev.map((plan) => ({
+          ...plan,
+          workouts: plan.workouts.map((workout) =>
+            workout.id === workoutId ? { ...workout, ...updates } : workout,
+          ),
+        })),
+      );
+
+      // Update current plan if it contains this workout
+      if (currentPlan) {
+        setCurrentPlan((prev) =>
+          prev
+            ? {
+                ...prev,
+                workouts: prev.workouts.map((workout) =>
+                  workout.id === workoutId
+                    ? { ...workout, ...updates }
+                    : workout,
+                ),
+              }
+            : null,
+        );
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to update workout');
+    }
+  };
+
   const value: TrainingContextType = {
     trainingPlans,
     currentPlan,
@@ -136,6 +231,8 @@ export const TrainingProvider: React.FC<TrainingProviderProps> = ({
     getTrainingPlan,
     setCurrentPlan,
     refreshPlans,
+    completeWorkout,
+    updateWorkout,
   };
 
   return (

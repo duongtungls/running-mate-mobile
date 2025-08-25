@@ -9,15 +9,21 @@ import {
   Alert,
 } from 'react-native';
 import { useI18n } from '@/hooks/useI18n';
+import { useTheme } from '@/contexts/ThemeContext';
+import { createRgbaColor, opacity } from '@/constants/designTokens';
 
 interface LanguageSelectorProps {
   style?: object;
   textStyle?: object;
+  onLanguageSelect?: () => void;
+  showAsModal?: boolean;
 }
 
 const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   style,
   textStyle,
+  onLanguageSelect,
+  showAsModal = true,
 }) => {
   const {
     t,
@@ -26,6 +32,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     getAvailableLanguages,
     getLanguageDisplayName,
   } = useI18n();
+  const { theme } = useTheme();
   const [modalVisible, setModalVisible] = useState(false);
 
   const currentLang = getCurrentLanguage();
@@ -34,7 +41,12 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const handleLanguageSelect = async (langCode: string) => {
     try {
       await changeLanguage(langCode);
-      setModalVisible(false);
+      if (showAsModal) {
+        setModalVisible(false);
+      }
+      if (onLanguageSelect) {
+        onLanguageSelect();
+      }
     } catch {
       Alert.alert(t('errors.error'), t('errors.somethingWentWrong'));
     }
@@ -44,29 +56,62 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
     <TouchableOpacity
       style={[
         styles.languageItem,
-        item === currentLang && styles.selectedLanguageItem,
+        {
+          backgroundColor:
+            item === currentLang
+              ? createRgbaColor(theme.primary, 0.1)
+              : 'transparent',
+        },
       ]}
       onPress={() => handleLanguageSelect(item)}
     >
       <Text
         style={[
           styles.languageText,
-          item === currentLang && styles.selectedLanguageText,
+          {
+            color: item === currentLang ? theme.primary : theme.cardForeground,
+            fontFamily:
+              item === currentLang ? 'Inter-SemiBold' : 'Inter-Regular',
+          },
         ]}
       >
         {getLanguageDisplayName(item)}
       </Text>
-      {item === currentLang && <Text style={styles.checkmark}>✓</Text>}
+      {item === currentLang && (
+        <Text style={[styles.checkmark, { color: theme.primary }]}>✓</Text>
+      )}
     </TouchableOpacity>
   );
 
+  // If not showing as modal, return just the list
+  if (!showAsModal) {
+    return (
+      <FlatList
+        data={languages}
+        renderItem={renderLanguageItem}
+        keyExtractor={(item) => item}
+        style={[styles.languageList, style]}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  }
+
+  // Otherwise return the original modal version with theme support
   return (
     <View style={style}>
       <TouchableOpacity
-        style={styles.selector}
+        style={[
+          styles.selector,
+          {
+            backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+            borderColor: createRgbaColor(theme.foreground, opacity[2]),
+          },
+        ]}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={[styles.selectorText, textStyle]}>
+        <Text
+          style={[styles.selectorText, { color: theme.foreground }, textStyle]}
+        >
           {t('common.language')}: {getLanguageDisplayName(currentLang)}
         </Text>
       </TouchableOpacity>
@@ -78,14 +123,43 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>{t('settings.language')}</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.card }]}>
+            <View
+              style={[
+                styles.modalHeader,
+                {
+                  borderBottomColor: createRgbaColor(
+                    theme.cardForeground,
+                    opacity[1],
+                  ),
+                },
+              ]}
+            >
+              <Text
+                style={[styles.modalTitle, { color: theme.cardForeground }]}
+              >
+                {t('common.language')}
+              </Text>
               <TouchableOpacity
-                style={styles.closeButton}
+                style={[
+                  styles.closeButton,
+                  {
+                    backgroundColor: createRgbaColor(
+                      theme.cardForeground,
+                      opacity[1],
+                    ),
+                  },
+                ]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={styles.closeButtonText}>✕</Text>
+                <Text
+                  style={[
+                    styles.closeButtonText,
+                    { color: theme.cardForeground },
+                  ]}
+                >
+                  ✕
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -94,6 +168,7 @@ const LanguageSelector: React.FC<LanguageSelectorProps> = ({
               renderItem={renderLanguageItem}
               keyExtractor={(item) => item}
               style={styles.languageList}
+              showsVerticalScrollIndicator={false}
             />
           </View>
         </View>

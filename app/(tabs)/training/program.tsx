@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
@@ -20,8 +21,15 @@ import {
   Users,
   Trophy,
   Zap,
+  Activity,
+  BarChart3,
+  Heart,
+  Timer,
 } from 'lucide-react-native';
 import GradientBackground from '../../../components/GradientBackground';
+import { useTheme } from '../../../contexts/ThemeContext';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 type WorkoutStatus = 'completed' | 'current' | 'upcoming';
 
@@ -38,7 +46,58 @@ interface Workout {
   status: WorkoutStatus;
   calories?: number;
   heartRateZone?: string;
+  pace?: string;
+  averageHR?: number;
 }
+
+interface WeeklyProgress {
+  week: number;
+  totalDistance: number;
+  totalTime: number;
+  avgPace: string;
+  workoutsCompleted: number;
+  caloriesBurned: number;
+}
+
+interface PerformanceMetric {
+  date: string;
+  value: number;
+  type: 'pace' | 'distance' | 'heartRate' | 'duration';
+}
+
+const weeklyProgress: WeeklyProgress[] = [
+  {
+    week: 1,
+    totalDistance: 28,
+    totalTime: 180,
+    avgPace: '5:45/km',
+    workoutsCompleted: 4,
+    caloriesBurned: 1420,
+  },
+  {
+    week: 2,
+    totalDistance: 32,
+    totalTime: 195,
+    avgPace: '5:30/km',
+    workoutsCompleted: 5,
+    caloriesBurned: 1680,
+  },
+  {
+    week: 3,
+    totalDistance: 35,
+    totalTime: 210,
+    avgPace: '5:15/km',
+    workoutsCompleted: 3,
+    caloriesBurned: 1291,
+  },
+];
+
+const performanceData: PerformanceMetric[] = [
+  { date: 'Week 1', value: 5.75, type: 'pace' },
+  { date: 'Week 2', value: 5.5, type: 'pace' },
+  { date: 'Week 3', value: 5.25, type: 'pace' },
+  { date: 'Week 4', value: 5.0, type: 'pace' },
+];
 
 const workouts: Workout[] = [
   {
@@ -54,6 +113,8 @@ const workouts: Workout[] = [
     status: 'completed',
     calories: 285,
     heartRateZone: 'Zone 1-2',
+    pace: '6:00/km',
+    averageHR: 145,
   },
   {
     id: '2',
@@ -80,6 +141,8 @@ const workouts: Workout[] = [
     status: 'current',
     calories: 486,
     heartRateZone: 'Zone 4-5',
+    pace: '4:30/km',
+    averageHR: 175,
   },
   {
     id: '4',
@@ -108,6 +171,8 @@ const workouts: Workout[] = [
     status: 'upcoming',
     calories: 520,
     heartRateZone: 'Zone 3-4',
+    pace: '5:20/km',
+    averageHR: 165,
   },
   {
     id: '6',
@@ -134,6 +199,8 @@ const workouts: Workout[] = [
     status: 'upcoming',
     calories: 780,
     heartRateZone: 'Zone 2-3',
+    pace: '5:45/km',
+    averageHR: 155,
   },
 ];
 
@@ -176,8 +243,70 @@ const getIntensityColor = (intensity: string) => {
   }
 };
 
+// Simple chart component for progress visualization
+const SimpleChart = ({ data, type, height = 120 }) => {
+  const { theme } = useTheme();
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const chartWidth = screenWidth - 80;
+  const barWidth = (chartWidth - 60) / data.length;
+
+  return (
+    <View style={[styles.chartContainer, { height }]}>
+      <View style={styles.chartBars}>
+        {data.map((item, index) => {
+          const barHeight = (item.value / maxValue) * (height - 40);
+          return (
+            <View key={index} style={styles.chartBarContainer}>
+              <View
+                style={[
+                  styles.chartBar,
+                  {
+                    height: barHeight,
+                    width: barWidth - 8,
+                    backgroundColor: theme.primary,
+                  },
+                ]}
+              />
+              <Text style={[styles.chartLabel, { color: theme.foreground }]}>
+                {item.date.replace('Week ', 'W')}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+};
+
+const ProgressCard = ({ title, value, subtitle, icon: Icon, color }) => {
+  const { theme } = useTheme();
+
+  return (
+    <View style={[styles.progressCard, { backgroundColor: `${theme.card}80` }]}>
+      <View style={styles.progressCardHeader}>
+        <Icon size={20} color={color} />
+        <Text style={[styles.progressCardTitle, { color: theme.foreground }]}>
+          {title}
+        </Text>
+      </View>
+      <Text style={[styles.progressCardValue, { color: theme.foreground }]}>
+        {value}
+      </Text>
+      <Text
+        style={[
+          styles.progressCardSubtitle,
+          { color: `${theme.foreground}80` },
+        ]}
+      >
+        {subtitle}
+      </Text>
+    </View>
+  );
+};
+
 export default function ProgramDetailScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
 
   const completedWorkouts = workouts.filter(
     (w) => w.status === 'completed',
@@ -185,27 +314,47 @@ export default function ProgramDetailScreen() {
   const totalWorkouts = workouts.length;
   const progressPercentage = (completedWorkouts / totalWorkouts) * 100;
 
+  const currentWeek = weeklyProgress[weeklyProgress.length - 1];
+  const totalDistance = weeklyProgress.reduce(
+    (sum, week) => sum + week.totalDistance,
+    0,
+  );
+  const totalCalories = weeklyProgress.reduce(
+    (sum, week) => sum + week.caloriesBurned,
+    0,
+  );
+
   return (
     <GradientBackground>
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity
-            style={styles.backButton}
+            style={[
+              styles.backButton,
+              {
+                backgroundColor: `${theme.card}4D`,
+                borderColor: `${theme.foreground}33`,
+              },
+            ]}
             onPress={() => router.back()}
           >
-            <ArrowLeft size={24} color="#fff" />
+            <ArrowLeft size={24} color={theme.foreground} />
           </TouchableOpacity>
 
           <View style={styles.headerContent}>
-            <Text style={styles.title}>5K Improvement Plan</Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.title, { color: theme.foreground }]}>
+              5K Improvement Plan
+            </Text>
+            <Text style={[styles.subtitle, { color: `${theme.foreground}CC` }]}>
               Week 3 of 8 • Intermediate Level
             </Text>
           </View>
         </View>
 
         {/* Program Overview */}
-        <View style={styles.overviewCard}>
+        <View
+          style={[styles.overviewCard, { backgroundColor: `${theme.card}80` }]}
+        >
           <Image
             source={{
               uri: 'https://images.pexels.com/photos/2402777/pexels-photo-2402777.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -215,16 +364,33 @@ export default function ProgramDetailScreen() {
           <View style={styles.overviewContent}>
             <View style={styles.progressSection}>
               <View style={styles.progressHeader}>
-                <Text style={styles.progressTitle}>Weekly Progress</Text>
-                <Text style={styles.progressText}>
+                <Text
+                  style={[styles.progressTitle, { color: theme.foreground }]}
+                >
+                  Weekly Progress
+                </Text>
+                <Text
+                  style={[
+                    styles.progressText,
+                    { color: `${theme.foreground}CC` },
+                  ]}
+                >
                   {completedWorkouts}/{totalWorkouts} completed
                 </Text>
               </View>
-              <View style={styles.progressBar}>
+              <View
+                style={[
+                  styles.progressBar,
+                  { backgroundColor: `${theme.foreground}1A` },
+                ]}
+              >
                 <View
                   style={[
                     styles.progressFill,
-                    { width: `${progressPercentage}%` },
+                    {
+                      width: `${progressPercentage}%`,
+                      backgroundColor: theme.primary,
+                    },
                   ]}
                 />
               </View>
@@ -232,29 +398,104 @@ export default function ProgramDetailScreen() {
 
             <View style={styles.statsGrid}>
               <View style={styles.statItem}>
-                <Target size={20} color="#10b981" />
-                <Text style={styles.statValue}>31km</Text>
-                <Text style={styles.statLabel}>This Week</Text>
+                <Target size={20} color={theme.primary} />
+                <Text style={[styles.statValue, { color: theme.foreground }]}>
+                  {currentWeek.totalDistance}km
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: `${theme.foreground}CC` }]}
+                >
+                  This Week
+                </Text>
               </View>
               <View style={styles.statItem}>
-                <Clock size={20} color="#10b981" />
-                <Text style={styles.statValue}>4h 20m</Text>
-                <Text style={styles.statLabel}>Total Time</Text>
+                <Clock size={20} color={theme.primary} />
+                <Text style={[styles.statValue, { color: theme.foreground }]}>
+                  {Math.floor(currentWeek.totalTime / 60)}h{' '}
+                  {currentWeek.totalTime % 60}m
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: `${theme.foreground}CC` }]}
+                >
+                  Total Time
+                </Text>
               </View>
               <View style={styles.statItem}>
-                <Trophy size={20} color="#10b981" />
-                <Text style={styles.statValue}>18:45</Text>
-                <Text style={styles.statLabel}>Target 5K</Text>
+                <Trophy size={20} color={theme.primary} />
+                <Text style={[styles.statValue, { color: theme.foreground }]}>
+                  18:45
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: `${theme.foreground}CC` }]}
+                >
+                  Target 5K
+                </Text>
               </View>
             </View>
           </View>
         </View>
 
+        {/* Performance Analytics */}
+        <View style={styles.analyticsSection}>
+          <Text style={[styles.sectionTitle, { color: theme.foreground }]}>
+            Performance Analytics
+          </Text>
+
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={styles.progressCardsContainer}>
+              <ProgressCard
+                title="Total Distance"
+                value={`${totalDistance}km`}
+                subtitle="Across 3 weeks"
+                icon={Target}
+                color={theme.primary}
+              />
+              <ProgressCard
+                title="Current Pace"
+                value={currentWeek.avgPace}
+                subtitle="Average this week"
+                icon={Timer}
+                color="#f59e0b"
+              />
+              <ProgressCard
+                title="Calories Burned"
+                value={totalCalories.toLocaleString()}
+                subtitle="Total calories"
+                icon={Zap}
+                color="#ef4444"
+              />
+              <ProgressCard
+                title="Avg Heart Rate"
+                value="162 bpm"
+                subtitle="Zone 3-4"
+                icon={Heart}
+                color="#ec4899"
+              />
+            </View>
+          </ScrollView>
+
+          <View
+            style={[styles.chartCard, { backgroundColor: `${theme.card}80` }]}
+          >
+            <View style={styles.chartHeader}>
+              <BarChart3 size={20} color={theme.primary} />
+              <Text style={[styles.chartTitle, { color: theme.foreground }]}>
+                Pace Progression
+              </Text>
+            </View>
+            <SimpleChart data={performanceData} type="pace" />
+          </View>
+        </View>
+
         {/* Program Info */}
         <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Program Overview</Text>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoText}>
+          <Text style={[styles.sectionTitle, { color: theme.foreground }]}>
+            Program Overview
+          </Text>
+          <View
+            style={[styles.infoCard, { backgroundColor: `${theme.card}80` }]}
+          >
+            <Text style={[styles.infoText, { color: `${theme.foreground}E6` }]}>
               This 8-week program is designed to improve your 5K time through a
               balanced mix of speed work, tempo runs, and endurance training.
               Each week builds progressively to enhance your aerobic capacity
@@ -263,16 +504,37 @@ export default function ProgramDetailScreen() {
 
             <View style={styles.infoStats}>
               <View style={styles.infoStatItem}>
-                <Users size={16} color="rgba(255, 255, 255, 0.8)" />
-                <Text style={styles.infoStatText}>12,847 runners</Text>
+                <Users size={16} color={`${theme.foreground}CC`} />
+                <Text
+                  style={[
+                    styles.infoStatText,
+                    { color: `${theme.foreground}CC` },
+                  ]}
+                >
+                  12,847 runners
+                </Text>
               </View>
               <View style={styles.infoStatItem}>
-                <Award size={16} color="rgba(255, 255, 255, 0.8)" />
-                <Text style={styles.infoStatText}>4.8/5 rating</Text>
+                <Award size={16} color={`${theme.foreground}CC`} />
+                <Text
+                  style={[
+                    styles.infoStatText,
+                    { color: `${theme.foreground}CC` },
+                  ]}
+                >
+                  4.8/5 rating
+                </Text>
               </View>
               <View style={styles.infoStatItem}>
-                <Zap size={16} color="rgba(255, 255, 255, 0.8)" />
-                <Text style={styles.infoStatText}>AI Optimized</Text>
+                <Zap size={16} color={`${theme.foreground}CC`} />
+                <Text
+                  style={[
+                    styles.infoStatText,
+                    { color: `${theme.foreground}CC` },
+                  ]}
+                >
+                  AI Optimized
+                </Text>
               </View>
             </View>
           </View>
@@ -280,14 +542,20 @@ export default function ProgramDetailScreen() {
 
         {/* Weekly Schedule */}
         <View style={styles.scheduleSection}>
-          <Text style={styles.sectionTitle}>This Week&apos;s Schedule</Text>
+          <Text style={[styles.sectionTitle, { color: theme.foreground }]}>
+            This Week&apos;s Schedule
+          </Text>
 
           {workouts.map((workout) => (
             <TouchableOpacity
               key={workout.id}
               style={[
                 styles.workoutCard,
-                workout.status === 'current' && styles.currentWorkoutCard,
+                { backgroundColor: `${theme.card}80` },
+                workout.status === 'current' && [
+                  styles.currentWorkoutCard,
+                  { borderColor: theme.primary },
+                ],
               ]}
               onPress={() =>
                 workout.status === 'current' && router.push('/training/run')
@@ -305,8 +573,19 @@ export default function ProgramDetailScreen() {
                   <View style={styles.workoutTitleRow}>
                     {getStatusIcon(workout.status)}
                     <View style={styles.workoutTitleContainer}>
-                      <Text style={styles.workoutDay}>{workout.day}</Text>
-                      <Text style={styles.workoutDate}>{workout.date}</Text>
+                      <Text
+                        style={[styles.workoutDay, { color: theme.foreground }]}
+                      >
+                        {workout.day}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.workoutDate,
+                          { color: `${theme.foreground}99` },
+                        ]}
+                      >
+                        {workout.date}
+                      </Text>
                     </View>
                   </View>
                   <View
@@ -328,41 +607,74 @@ export default function ProgramDetailScreen() {
                   </View>
                 </View>
 
-                <Text style={styles.workoutTitle}>{workout.title}</Text>
-                <Text style={styles.workoutType}>{workout.type}</Text>
-                <Text style={styles.workoutDescription}>
+                <Text
+                  style={[styles.workoutTitle, { color: theme.foreground }]}
+                >
+                  {workout.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.workoutType,
+                    { color: `${theme.foreground}B3` },
+                  ]}
+                >
+                  {workout.type}
+                </Text>
+                <Text
+                  style={[
+                    styles.workoutDescription,
+                    { color: `${theme.foreground}CC` },
+                  ]}
+                >
                   {workout.description}
                 </Text>
 
                 {workout.distance !== '0km' && (
                   <View style={styles.workoutStats}>
                     <View style={styles.workoutStatItem}>
-                      <Target size={14} color="rgba(255, 255, 255, 0.8)" />
-                      <Text style={styles.workoutStatText}>
+                      <Target size={14} color={`${theme.foreground}CC`} />
+                      <Text
+                        style={[
+                          styles.workoutStatText,
+                          { color: `${theme.foreground}CC` },
+                        ]}
+                      >
                         {workout.distance}
                       </Text>
                     </View>
                     <View style={styles.workoutStatItem}>
-                      <Clock size={14} color="rgba(255, 255, 255, 0.8)" />
-                      <Text style={styles.workoutStatText}>
+                      <Clock size={14} color={`${theme.foreground}CC`} />
+                      <Text
+                        style={[
+                          styles.workoutStatText,
+                          { color: `${theme.foreground}CC` },
+                        ]}
+                      >
                         {workout.duration}
                       </Text>
                     </View>
                     {workout.calories && (
                       <View style={styles.workoutStatItem}>
-                        <Zap size={14} color="rgba(255, 255, 255, 0.8)" />
-                        <Text style={styles.workoutStatText}>
+                        <Zap size={14} color={`${theme.foreground}CC`} />
+                        <Text
+                          style={[
+                            styles.workoutStatText,
+                            { color: `${theme.foreground}CC` },
+                          ]}
+                        >
                           {workout.calories} cal
                         </Text>
                       </View>
                     )}
                     {workout.heartRateZone && (
                       <View style={styles.workoutStatItem}>
-                        <TrendingUp
-                          size={14}
-                          color="rgba(255, 255, 255, 0.8)"
-                        />
-                        <Text style={styles.workoutStatText}>
+                        <TrendingUp size={14} color={`${theme.foreground}CC`} />
+                        <Text
+                          style={[
+                            styles.workoutStatText,
+                            { color: `${theme.foreground}CC` },
+                          ]}
+                        >
                           {workout.heartRateZone}
                         </Text>
                       </View>
@@ -403,12 +715,10 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   headerContent: {
     flex: 1,
@@ -425,13 +735,12 @@ const styles = StyleSheet.create({
     color: 'rgba(255, 255, 255, 0.8)',
   },
   overviewCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 16,
     margin: 20,
     marginTop: 0,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   overviewImage: {
     width: '100%',
@@ -461,12 +770,10 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 4,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#10b981',
     borderRadius: 4,
   },
   statsGrid: {
@@ -500,11 +807,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   infoCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   infoText: {
     fontFamily: 'Inter-Regular',
@@ -532,13 +838,12 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   workoutCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     marginBottom: 12,
     flexDirection: 'row',
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   currentWorkoutCard: {
     borderColor: '#3b82f6',
@@ -636,5 +941,83 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 20,
+  },
+  analyticsSection: {
+    padding: 20,
+    paddingTop: 0,
+  },
+  progressCardsContainer: {
+    flexDirection: 'row',
+    gap: 16,
+    paddingHorizontal: 4,
+  },
+  progressCard: {
+    borderRadius: 12,
+    padding: 16,
+    minWidth: 140,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  progressCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  progressCardTitle: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+  },
+  progressCardValue: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  progressCardSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+  },
+  chartCard: {
+    borderRadius: 12,
+    padding: 20,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  chartHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    gap: 8,
+  },
+  chartTitle: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 16,
+  },
+  chartContainer: {
+    justifyContent: 'flex-end',
+    alignItems: 'flex-end',
+  },
+  chartBars: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-around',
+    width: '100%',
+    height: '100%',
+  },
+  chartBarContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 4,
+  },
+  chartBar: {
+    borderRadius: 4,
+    marginBottom: 8,
+  },
+  chartLabel: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });

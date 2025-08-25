@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  FlatList,
+  Image,
 } from 'react-native';
 import {
   Calendar,
@@ -14,12 +16,19 @@ import {
   TrendingUp,
   Brain,
   Plus,
+  Star,
+  Users,
+  Award,
+  BookOpen,
+  Search,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useState, useCallback } from 'react';
 import GradientBackground from '../../../components/GradientBackground';
 import { useTraining } from '../../../contexts/TrainingContext';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { createRgbaColor, opacity } from '../../../constants/designTokens';
 
 export default function TrainingScreen() {
   const router = useRouter();
@@ -27,12 +36,87 @@ export default function TrainingScreen() {
   const { trainingPlans, currentPlan, loading, error, refreshPlans } =
     useTraining();
   const [refreshing, setRefreshing] = useState(false);
+  const [activeTab, setActiveTab] = useState('my-plans');
+  const { theme } = useTheme();
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await refreshPlans();
     setRefreshing(false);
   }, [refreshPlans]);
+
+  // Mock data for featured programs (will be replaced with API data)
+  const featuredPrograms = [
+    {
+      id: '1',
+      title: 'Beginner 5K Training',
+      description:
+        'Perfect for first-time runners looking to complete their first 5K race',
+      duration: '8 weeks',
+      difficulty: 'Beginner',
+      author: 'Sarah Johnson',
+      authorAvatar:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
+      rating: 4.8,
+      participants: 1247,
+      progress: 0,
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b',
+      tags: ['5K', 'Beginner', 'Endurance'],
+      enrolled: false,
+    },
+    {
+      id: '2',
+      title: 'Marathon Training Pro',
+      description:
+        'Advanced 16-week marathon training program for experienced runners',
+      duration: '16 weeks',
+      difficulty: 'Advanced',
+      author: 'Mike Chen',
+      authorAvatar:
+        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
+      rating: 4.9,
+      participants: 892,
+      progress: 25,
+      image: 'https://images.unsplash.com/photo-1544717297-fa95b6ee9643',
+      tags: ['Marathon', 'Advanced', 'Endurance'],
+      enrolled: true,
+    },
+    {
+      id: '3',
+      title: 'Speed Development',
+      description:
+        'Improve your running speed with interval training and tempo runs',
+      duration: '6 weeks',
+      difficulty: 'Intermediate',
+      author: 'Emma Davis',
+      authorAvatar:
+        'https://images.unsplash.com/photo-1438761681033-6461ffad8d80',
+      rating: 4.7,
+      participants: 634,
+      progress: 100,
+      image: 'https://images.unsplash.com/photo-1551698618-1dfe5d97d256',
+      tags: ['Speed', 'Intervals', 'Intermediate'],
+      enrolled: true,
+    },
+  ];
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch (difficulty) {
+      case 'Beginner':
+        return '#10b981';
+      case 'Intermediate':
+        return '#f59e0b';
+      case 'Advanced':
+        return '#ef4444';
+      default:
+        return '#6b7280';
+    }
+  };
+
+  const filteredPrograms =
+    activeTab === 'my-plans'
+      ? featuredPrograms.filter((p) => p.enrolled)
+      : featuredPrograms;
 
   const getCurrentWeekWorkouts = () => {
     if (!currentPlan?.workouts) return [];
@@ -49,24 +133,49 @@ export default function TrainingScreen() {
     return 'pending';
   };
 
-  return (
-    <GradientBackground>
-      <ScrollView
-        style={styles.container}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-      >
-        <View style={styles.header}>
-          <Text style={styles.title}>Training Plans</Text>
-          <Text style={styles.subtitle}>Personalized by AI for your goals</Text>
+  const renderTabContent = () => {
+    if (activeTab === 'schedule') {
+      return (
+        <View style={styles.scheduleContainer}>
+          <TouchableOpacity
+            style={[
+              styles.scheduleCard,
+              {
+                backgroundColor: createRgbaColor(theme.foreground, opacity[1]),
+              },
+            ]}
+            onPress={() => router.push('/training/schedule')}
+          >
+            <Calendar size={48} color={theme.primary} />
+            <Text style={[styles.scheduleTitle, { color: theme.foreground }]}>
+              Training Schedule
+            </Text>
+            <Text
+              style={[
+                styles.scheduleSubtitle,
+                { color: createRgbaColor(theme.foreground, opacity[8]) },
+              ]}
+            >
+              View and manage your workout calendar
+            </Text>
+          </TouchableOpacity>
         </View>
+      );
+    }
 
+    return (
+      <>
+        {/* Current Program Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Current Program</Text>
+            <Text style={[styles.sectionTitle, { color: theme.foreground }]}>
+              {activeTab === 'my-plans' ? 'My Programs' : 'Featured Programs'}
+            </Text>
             <TouchableOpacity
-              style={styles.generateButton}
+              style={[
+                styles.generateButton,
+                { backgroundColor: theme.primary },
+              ]}
               onPress={() => router.push('/training/generate-plan')}
             >
               <Brain size={16} color="#fff" />
@@ -74,113 +183,363 @@ export default function TrainingScreen() {
             </TouchableOpacity>
           </View>
 
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#fff" />
-            </View>
-          ) : currentPlan ? (
+          {activeTab === 'my-plans' && currentPlan && (
             <TouchableOpacity
-              style={styles.programCard}
+              style={[
+                styles.programCard,
+                {
+                  backgroundColor: createRgbaColor(
+                    theme.foreground,
+                    opacity[1],
+                  ),
+                },
+              ]}
               onPress={() => router.push('/training/program')}
             >
               <View style={styles.programHeader}>
-                <Text style={styles.programTitle}>{currentPlan.name}</Text>
-                <Text style={styles.programWeek}>
+                <Text
+                  style={[styles.programTitle, { color: theme.foreground }]}
+                >
+                  {currentPlan.name}
+                </Text>
+                <Text
+                  style={[
+                    styles.programWeek,
+                    { color: createRgbaColor(theme.foreground, opacity[8]) },
+                  ]}
+                >
                   Week 1 of {currentPlan.duration}
                 </Text>
               </View>
-              <View style={styles.progressBar}>
-                <View style={[styles.progressFill, { width: '12.5%' }]} />
+              <View
+                style={[
+                  styles.progressBar,
+                  {
+                    backgroundColor: createRgbaColor(
+                      theme.foreground,
+                      opacity[1],
+                    ),
+                  },
+                ]}
+              >
+                <View
+                  style={[
+                    styles.progressFill,
+                    { backgroundColor: theme.primary, width: '12.5%' },
+                  ]}
+                />
               </View>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              style={styles.emptyProgramCard}
-              onPress={() => router.push('/training/generate-plan')}
-            >
-              <Plus size={48} color="rgba(255, 255, 255, 0.4)" />
-              <Text style={styles.emptyProgramText}>
-                Create your first training plan
-              </Text>
-              <Text style={styles.emptyProgramSubtext}>
-                Let AI generate a personalized plan for you
-              </Text>
             </TouchableOpacity>
           )}
         </View>
 
-        {/* Floating Action Button for creating new plans */}
+        {/* Program Cards */}
+        <FlatList
+          data={filteredPrograms}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.featuredCard,
+                {
+                  backgroundColor: createRgbaColor(
+                    theme.foreground,
+                    opacity[1],
+                  ),
+                },
+              ]}
+              onPress={() => router.push('/training/program')}
+            >
+              <Image
+                source={{ uri: item.image }}
+                style={styles.featuredImage}
+              />
+              <View style={styles.featuredContent}>
+                <View style={styles.featuredHeader}>
+                  <View style={styles.featuredTitleContainer}>
+                    <Text
+                      style={[
+                        styles.featuredTitle,
+                        { color: theme.foreground },
+                      ]}
+                    >
+                      {item.title}
+                    </Text>
+                    <View
+                      style={[
+                        styles.difficultyBadge,
+                        {
+                          backgroundColor: createRgbaColor(
+                            getDifficultyColor(item.difficulty),
+                            0.2,
+                          ),
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.difficultyText,
+                          { color: getDifficultyColor(item.difficulty) },
+                        ]}
+                      >
+                        {item.difficulty}
+                      </Text>
+                    </View>
+                  </View>
+                  <View style={styles.ratingContainer}>
+                    <Star size={14} color="#f59e0b" fill="#f59e0b" />
+                    <Text
+                      style={[
+                        styles.ratingText,
+                        {
+                          color: createRgbaColor(theme.foreground, opacity[8]),
+                        },
+                      ]}
+                    >
+                      {item.rating}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text
+                  style={[
+                    styles.featuredDescription,
+                    { color: createRgbaColor(theme.foreground, opacity[8]) },
+                  ]}
+                >
+                  {item.description}
+                </Text>
+
+                <View style={styles.featuredStats}>
+                  <View style={styles.statItem}>
+                    <Clock
+                      size={14}
+                      color={createRgbaColor(theme.foreground, opacity[6])}
+                    />
+                    <Text
+                      style={[
+                        styles.statText,
+                        {
+                          color: createRgbaColor(theme.foreground, opacity[8]),
+                        },
+                      ]}
+                    >
+                      {item.duration}
+                    </Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Users
+                      size={14}
+                      color={createRgbaColor(theme.foreground, opacity[6])}
+                    />
+                    <Text
+                      style={[
+                        styles.statText,
+                        {
+                          color: createRgbaColor(theme.foreground, opacity[8]),
+                        },
+                      ]}
+                    >
+                      {item.participants}
+                    </Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Award
+                      size={14}
+                      color={createRgbaColor(theme.foreground, opacity[6])}
+                    />
+                    <Text
+                      style={[
+                        styles.statText,
+                        {
+                          color: createRgbaColor(theme.foreground, opacity[8]),
+                        },
+                      ]}
+                    >
+                      by {item.author}
+                    </Text>
+                  </View>
+                </View>
+
+                {item.progress > 0 && (
+                  <View style={styles.progressSection}>
+                    <View style={styles.progressHeader}>
+                      <Text
+                        style={[
+                          styles.progressLabel,
+                          {
+                            color: createRgbaColor(
+                              theme.foreground,
+                              opacity[8],
+                            ),
+                          },
+                        ]}
+                      >
+                        Progress
+                      </Text>
+                      <Text
+                        style={[
+                          styles.progressPercent,
+                          { color: theme.foreground },
+                        ]}
+                      >
+                        {item.progress}%
+                      </Text>
+                    </View>
+                    <View
+                      style={[
+                        styles.progressBar,
+                        {
+                          backgroundColor: createRgbaColor(
+                            theme.foreground,
+                            opacity[2],
+                          ),
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            backgroundColor: theme.primary,
+                            width: `${item.progress}%`,
+                          },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.tagsContainer}>
+                  {item.tags.map((tag, index) => (
+                    <View
+                      key={index}
+                      style={[
+                        styles.tag,
+                        {
+                          backgroundColor: createRgbaColor(theme.primary, 0.1),
+                        },
+                      ]}
+                    >
+                      <Text style={[styles.tagText, { color: theme.primary }]}>
+                        {tag}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            </TouchableOpacity>
+          )}
+          keyExtractor={(item) => item.id}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.programsList}
+        />
+      </>
+    );
+  };
+
+  return (
+    <GradientBackground>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: theme.foreground }]}>
+            Training Plans
+          </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              { color: createRgbaColor(theme.foreground, opacity[8]) },
+            ]}
+          >
+            Personalized by AI for your goals
+          </Text>
+        </View>
+
+        {/* Tab Navigation */}
+        <View style={styles.tabContainer}>
+          {['my-plans', 'discover', 'schedule'].map((tab) => (
+            <TouchableOpacity
+              key={tab}
+              style={[
+                styles.tab,
+                {
+                  backgroundColor: createRgbaColor(
+                    theme.foreground,
+                    opacity[1],
+                  ),
+                },
+                activeTab === tab && { backgroundColor: theme.primary },
+              ]}
+              onPress={() => setActiveTab(tab)}
+            >
+              {tab === 'my-plans' && (
+                <BookOpen
+                  size={16}
+                  color={
+                    activeTab === tab
+                      ? '#fff'
+                      : createRgbaColor(theme.foreground, opacity[8])
+                  }
+                />
+              )}
+              {tab === 'discover' && (
+                <Search
+                  size={16}
+                  color={
+                    activeTab === tab
+                      ? '#fff'
+                      : createRgbaColor(theme.foreground, opacity[8])
+                  }
+                />
+              )}
+              {tab === 'schedule' && (
+                <Calendar
+                  size={16}
+                  color={
+                    activeTab === tab
+                      ? '#fff'
+                      : createRgbaColor(theme.foreground, opacity[8])
+                  }
+                />
+              )}
+              <Text
+                style={[
+                  styles.tabText,
+                  {
+                    color:
+                      activeTab === tab
+                        ? '#fff'
+                        : createRgbaColor(theme.foreground, opacity[8]),
+                  },
+                ]}
+              >
+                {tab === 'my-plans'
+                  ? 'My Plans'
+                  : tab === 'discover'
+                    ? 'Discover'
+                    : 'Schedule'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <ScrollView
+          style={styles.content}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {renderTabContent()}
+        </ScrollView>
+
+        {/* Floating Action Button */}
         <TouchableOpacity
-          style={styles.fab}
+          style={[styles.fab, { backgroundColor: theme.primary }]}
           onPress={() => router.push('/training/generate-plan')}
         >
           <Plus size={24} color="#fff" />
         </TouchableOpacity>
-
-        {currentPlan && (
-          <View style={styles.workouts}>
-            <Text style={styles.sectionTitle}>This Week&apos;s Workouts</Text>
-
-            {getCurrentWeekWorkouts().map((workout, index) => {
-              const dayNames = [
-                'Sunday',
-                'Monday',
-                'Tuesday',
-                'Wednesday',
-                'Thursday',
-                'Friday',
-                'Saturday',
-              ];
-              const status = getWorkoutStatus(workout.day_of_week);
-
-              return (
-                <TouchableOpacity
-                  key={workout.id}
-                  style={styles.workoutCard}
-                  onPress={() => router.push('/training/run')}
-                >
-                  <View
-                    style={[
-                      styles.workoutStatus,
-                      status === 'completed' && styles.completed,
-                      status === 'current' && styles.current,
-                    ]}
-                  />
-                  <View style={styles.workoutContent}>
-                    <Text style={styles.workoutDay}>
-                      {dayNames[workout.day_of_week]}
-                    </Text>
-                    <Text style={styles.workoutTitle}>{workout.name}</Text>
-                    <View style={styles.workoutDetails}>
-                      {workout.distance && (
-                        <View style={styles.detailItem}>
-                          <Target size={16} color="rgba(255, 255, 255, 0.8)" />
-                          <Text style={styles.detailText}>
-                            {workout.distance}km
-                          </Text>
-                        </View>
-                      )}
-                      <View style={styles.detailItem}>
-                        <Clock size={16} color="rgba(255, 255, 255, 0.8)" />
-                        <Text style={styles.detailText}>
-                          {workout.duration}min
-                        </Text>
-                      </View>
-                      <View style={styles.detailItem}>
-                        <TrendingUp
-                          size={16}
-                          color="rgba(255, 255, 255, 0.8)"
-                        />
-                        <Text style={styles.detailText}>{workout.type}</Text>
-                      </View>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        )}
-      </ScrollView>
+      </View>
     </GradientBackground>
   );
 }
@@ -196,13 +555,33 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Inter-Bold',
     fontSize: 28,
-    color: '#fff',
     marginBottom: 4,
   },
   subtitle: {
     fontFamily: 'Inter-Regular',
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    gap: 8,
+  },
+  tab: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 6,
+  },
+  tabText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 12,
+  },
+  content: {
+    flex: 1,
   },
   section: {
     padding: 20,
@@ -216,10 +595,8 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 20,
-    color: '#fff',
   },
   generateButton: {
-    backgroundColor: '#10b981',
     borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -233,11 +610,10 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   programCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 12,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
   programHeader: {
     flexDirection: 'row',
@@ -248,80 +624,148 @@ const styles = StyleSheet.create({
   programTitle: {
     fontFamily: 'Inter-SemiBold',
     fontSize: 18,
-    color: '#fff',
   },
   programWeek: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
   },
   progressBar: {
     height: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderRadius: 4,
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#10b981',
     borderRadius: 4,
   },
-  workouts: {
+  programsList: {
     padding: 20,
+    paddingTop: 0,
   },
-  workoutCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    marginBottom: 15,
-    flexDirection: 'row',
+  featuredCard: {
+    borderRadius: 16,
+    marginBottom: 20,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
-  workoutStatus: {
-    width: 6,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  featuredImage: {
+    width: '100%',
+    height: 160,
   },
-  completed: {
-    backgroundColor: '#10b981',
+  featuredContent: {
+    padding: 16,
   },
-  current: {
-    backgroundColor: '#3b82f6',
-  },
-  workoutContent: {
-    flex: 1,
-    padding: 15,
-  },
-  workoutDay: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    marginBottom: 4,
-  },
-  workoutTitle: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
-    color: '#fff',
+  featuredHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: 8,
   },
-  workoutDetails: {
-    flexDirection: 'row',
-    gap: 16,
+  featuredTitleContainer: {
+    flex: 1,
+    marginRight: 12,
   },
-  detailItem: {
+  featuredTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 18,
+    marginBottom: 4,
+  },
+  difficultyBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  difficultyText: {
+    fontFamily: 'Inter-SemiBold',
+    fontSize: 10,
+  },
+  ratingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
   },
-  detailText: {
+  ratingText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+  },
+  featuredDescription: {
     fontFamily: 'Inter-Regular',
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  featuredStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  statItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    flex: 1,
+  },
+  statText: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 12,
+  },
+  progressSection: {
+    marginBottom: 12,
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  progressLabel: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 14,
+  },
+  progressPercent: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 14,
+  },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  tag: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tagText: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 10,
+  },
+  scheduleContainer: {
+    padding: 20,
+  },
+  scheduleCard: {
+    borderRadius: 16,
+    padding: 40,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  scheduleTitle: {
+    fontFamily: 'Inter-Bold',
+    fontSize: 20,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  scheduleSubtitle: {
+    fontFamily: 'Inter-Regular',
+    fontSize: 14,
+    textAlign: 'center',
   },
   fab: {
     position: 'absolute',
     bottom: 30,
     right: 20,
-    backgroundColor: '#10b981',
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -335,34 +779,5 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.3,
     shadowRadius: 4.65,
-  },
-  loadingContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyProgramCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 12,
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-    borderStyle: 'dashed',
-  },
-  emptyProgramText: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 18,
-    color: '#fff',
-    marginTop: 16,
-    textAlign: 'center',
-  },
-  emptyProgramSubtext: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
-    marginTop: 8,
-    textAlign: 'center',
   },
 });
